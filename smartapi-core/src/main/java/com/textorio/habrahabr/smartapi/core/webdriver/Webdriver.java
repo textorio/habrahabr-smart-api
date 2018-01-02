@@ -35,12 +35,13 @@ public class Webdriver {
         addAll(Arrays.asList("--headless", "--disable-gpu", "--no-sandbox", "--incognito"));
     }};
 
-    private ChromeDriver chromeDriver;
+    private ChromeDriver driver;
 
-    public void initInstance() {
+    public Webdriver init() {
         enableDriverBinary();
-        chromeDriver = createChromeDriver().raiseIfInvalid("Chrome driver should be prepared").get();
-        initializeChromeDriver(chromeDriver);
+        driver = createChromeDriver().raiseIfInvalid("Chrome driver should be prepared").get();
+        initializeChromeDriver(driver);
+        return this;
     }
 
     public Thing<ChromeDriver, ?> createChromeDriver() {
@@ -140,11 +141,11 @@ public class Webdriver {
         return Thing.of(path);
     }
 
-    public ChromeDriver getChromeDriver() {
-        return chromeDriver;
+    public ChromeDriver getDriver() {
+        return driver;
     }
 
-    public void setChromeDriver(ChromeDriver chromeDriver) {
-        this.chromeDriver = chromeDriver;
+    public void setDriver(ChromeDriver driver) {
+        this.driver = driver;
     }
 }
