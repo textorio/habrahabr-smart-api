@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Scanner;
 
 /**
  * https://sites.google.com/a/chromium.org/chromedriver
@@ -27,10 +28,6 @@ public class Webdriver {
     public static final String WEBDRIVER_SUFFIX_MAC = "mac64";
     public static final String WEBDRIVER_SUFFIX_WIN = "win32.exe";
 
-    public static void main(String[] args) {
-        new Webdriver().enableDriver();
-    }
-
     public void enableDriver() {
         String driverPath = prepareDriver().raiseIfInvalid("nothing to do without temporary driver").get();
         System.setProperty(WEBDRIVER_BIN_PROPERTY_NAME, driverPath);
@@ -38,15 +35,22 @@ public class Webdriver {
 
     public Thing<String, ?> prepareDriver() {
         return findDriverInResources().raiseIfInvalid("nothing to do without a driver").extract((String driverResource) -> {
-            final File driverFile = new File(FileUtils.getTempDirectory(), driverResource);
+            logger.info(String.format("Driver resource: %s",driverResource));
+            File tempDirectory = FileUtils.getTempDirectory();
+            final File driverFile = new File(tempDirectory, driverResource);
+            logger.info(String.format("Temp directory: %s",tempDirectory));
+
             if (!driverFile.exists()) {
-//                URL resource = Thread.currentThread().getContextClassLoader().getResource(driverResource);
-//                URL resource = this.getClass().getClassLoader().getResource(driverResource);
-                logger.info(String.format("Driver resource: %s",driverResource));
-                URL resource = Resources.getResource(this.getClass(), driverResource);
+                // All this variants are not working, including Guava. Deal with it.
+                //URL resource = Thread.currentThread().getContextClassLoader().getResource(driverResource);
+                //URL resource = this.getClass().getClassLoader().getResource(driverResource);
+                //URL resource = Resources.getResource(this.getClass(), driverResource);
+
+                URL resource = getClass().getClassLoader().getResource(driverResource);
                 try (InputStream source = resource.openStream()) {
                     FileUtils.copyInputStreamToFile(source, driverFile);
                     driverFile.setExecutable(true);
+                    logger.info(String.format("Created a new driver file: %s",driverFile.getAbsolutePath()));
                 } catch (Exception ex) {
                     return Thing.ofError(ex, "Can't copy stream with a driver");
                 }
@@ -67,7 +71,7 @@ public class Webdriver {
             return Thing.ofError("Unknown operating system");
         }
 
-        String resultString = String.format("classpath:textorio-chromedriver-bin/release/%s/chromedriver_%s", WEBDRIVER_VERSION, suffix);
+        String resultString = String.format("textorio-chromedriver-bin/release/%s/chromedriver_%s", WEBDRIVER_VERSION, suffix);
         return Thing.of(resultString);
     }
 }
