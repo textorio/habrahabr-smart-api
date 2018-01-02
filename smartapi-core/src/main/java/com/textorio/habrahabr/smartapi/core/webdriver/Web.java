@@ -4,6 +4,7 @@ import com.textorio.habrahabr.smartapi.core.lang.Thing;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.openqa.selenium.Dimension;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
@@ -13,9 +14,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * https://sites.google.com/a/chromium.org/chromedriver
@@ -40,15 +39,19 @@ public class Web {
     private ChromeDriver driver;
 
     public Web init() {
+        return init(new WebSettings());
+    }
+
+    public Web init(WebSettings settings) {
         enableDriverBinary();
-        driver = createChromeDriver().raiseIfInvalid("Chrome driver should be prepared").get();
+        driver = createChromeDriver(settings.getProfileDirName()).raiseIfInvalid("Chrome driver should be prepared").get();
         initializeChromeDriver(driver);
         return this;
     }
 
-    public Thing<ChromeDriver, ?> createChromeDriver() {
+    public Thing<ChromeDriver, ?> createChromeDriver(Optional<String> profileDirName) {
         try {
-            ChromeOptions chromeOptions = prepareChromeOptions().raiseIfInvalid("Chrome options should be prepared OK").get();
+            ChromeOptions chromeOptions = prepareChromeOptions(profileDirName).raiseIfInvalid("Chrome options should be prepared OK").get();
             ChromeDriver chromeDriver = new ChromeDriver(chromeOptions);
             return Thing.of(chromeDriver, "Default Chrome driver");
         } catch (Exception e) {
@@ -61,14 +64,14 @@ public class Web {
         driver.manage().window().setSize(windowSize);
     }
 
-    public Thing<ChromeOptions, ?> prepareChromeOptions() {
+    public Thing<ChromeOptions, ?> prepareChromeOptions(Optional<String> profileDirName) {
         try {
             final ChromeOptions chromeOptions = new ChromeOptions();
             //@see https://sites.google.com/a/chromium.org/chromedriver/capabilities#TOC-Using-a-Chrome-executable-in-a-non-standard-location
             chromeOptions.setBinary(findChromeExecutable().raiseIfInvalid("Propertly installed Chrome is required").get());
             chromeOptions.addArguments(DEFAULT_CHROME_OPTS);
 
-            String chromeProfileDir = findProfileDirectory().raiseIfInvalid("Really need Chrome profile dir").get();
+            String chromeProfileDir = findProfileDirectory(profileDirName).raiseIfInvalid("Really need Chrome profile dir").get();
             chromeOptions.addArguments(String.format("user-data-dir=%s", chromeProfileDir));
 
             return Thing.of(chromeOptions);
@@ -147,8 +150,8 @@ public class Web {
         return Thing.of(path);
     }
 
-    public Thing<String, ?> findProfileDirectory() {
-        String profileDir = FileUtils.getTempDirectoryPath() + CHROME_PROFILE_DIR_NAME;
+    public Thing<String, ?> findProfileDirectory(Optional<String> profileDirName) {
+        String profileDir = FileUtils.getTempDirectoryPath() + (profileDirName.orElse(CHROME_PROFILE_DIR_NAME));
         try {
             FileUtils.forceMkdir(new File(profileDir));
             logger.info(String.format("Embedded Chrome profile directory is: %s", profileDir));
@@ -164,5 +167,10 @@ public class Web {
 
     public void setDriver(ChromeDriver driver) {
         this.driver = driver;
+    }
+
+    public void setAttribute(WebElement element, String attName, String attValue) {
+        driver.executeScript("arguments[0].setAttribute(arguments[1], arguments[2]);",
+                element, attName, attValue);
     }
 }
