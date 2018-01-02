@@ -20,8 +20,8 @@ import java.util.List;
  * https://sites.google.com/a/chromium.org/chromedriver
  * https://sites.google.com/a/chromium.org/chromedriver/downloads
  */
-public class Webdriver {
-    Logger logger = LoggerFactory.getLogger(Webdriver.class);
+public class Web {
+    Logger logger = LoggerFactory.getLogger(Web.class);
     //@see https://sites.google.com/a/chromium.org/chromedriver/getting-started
     public static final String WEBDRIVER_BIN_PROPERTY_NAME = "webdriver.chrome.driver";
     public static final String WEBDRIVER_VERSION = "2.34";
@@ -37,7 +37,7 @@ public class Webdriver {
 
     private ChromeDriver driver;
 
-    public Webdriver init() {
+    public Web init() {
         enableDriverBinary();
         driver = createChromeDriver().raiseIfInvalid("Chrome driver should be prepared").get();
         initializeChromeDriver(driver);
@@ -141,7 +141,7 @@ public class Webdriver {
         return Thing.of(path);
     }
 
-    public ChromeDriver getDriver() {
+    public ChromeDriver driver() {
         return driver;
     }
 
