@@ -6,6 +6,6 @@ import org.junit.jupiter.api.Test;
 public class WebdriverTest {
     @Test
     public void test () {
-        new Webdriver().enableDriver();
+        new Webdriver().initInstance();
     }
 }

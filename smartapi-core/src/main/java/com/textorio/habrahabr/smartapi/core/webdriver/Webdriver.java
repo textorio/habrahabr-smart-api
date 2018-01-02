@@ -3,15 +3,18 @@ package com.textorio.habrahabr.smartapi.core.webdriver;
 import com.textorio.habrahabr.smartapi.core.lang.Thing;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
-import com.google.common.io.Resources;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * https://sites.google.com/a/chromium.org/chromedriver
@@ -19,16 +22,55 @@ import java.util.Scanner;
  */
 public class Webdriver {
     Logger logger = LoggerFactory.getLogger(Webdriver.class);
-
-    //@see https://sites.google.com/a/chromium.org/chromedriver/capabilities#TOC-Using-a-Chrome-executable-in-a-non-standard-location
     //@see https://sites.google.com/a/chromium.org/chromedriver/getting-started
     public static final String WEBDRIVER_BIN_PROPERTY_NAME = "webdriver.chrome.driver";
     public static final String WEBDRIVER_VERSION = "2.34";
     public static final String WEBDRIVER_SUFFIX_LINUX = "linux64";
     public static final String WEBDRIVER_SUFFIX_MAC = "mac64";
     public static final String WEBDRIVER_SUFFIX_WIN = "win32.exe";
+    public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36";
 
-    public void enableDriver() {
+    public static List<String> DEFAULT_CHROME_OPTS = new ArrayList<>() {{
+        add(String.format("--user-agent=%s", USER_AGENT));
+        addAll(Arrays.asList("--headless", "--disable-gpu", "--no-sandbox", "--incognito"));
+    }};
+
+    private ChromeDriver chromeDriver;
+
+    public void initInstance() {
+        enableDriverBinary();
+        chromeDriver = createChromeDriver().raiseIfInvalid("Chrome driver should be prepared").get();
+        initializeChromeDriver(chromeDriver);
+    }
+
+    public Thing<ChromeDriver, ?> createChromeDriver() {
+        try {
+            ChromeOptions chromeOptions = prepareChromeOptions().raiseIfInvalid("Chrome options should be prepared OK").get();
+            ChromeDriver chromeDriver = new ChromeDriver(chromeOptions);
+            return Thing.of(chromeDriver, "Default Chrome driver");
+        } catch (Exception e) {
+            return Thing.ofError("Can't create Chrome Driver with desired capabilities");
+        }
+    }
+
+    public void initializeChromeDriver(ChromeDriver driver) {
+        final Dimension windowSize = new Dimension(1920, 1080); //1080p just for my streaming perversions :
+        driver.manage().window().setSize(windowSize);
+    }
+
+    public Thing<ChromeOptions, ?> prepareChromeOptions() {
+        try {
+            final ChromeOptions chromeOptions = new ChromeOptions();
+            //@see https://sites.google.com/a/chromium.org/chromedriver/capabilities#TOC-Using-a-Chrome-executable-in-a-non-standard-location
+            chromeOptions.setBinary(findChromeExecutable().raiseIfInvalid("Propertly installed Chrome is required").get());
+            chromeOptions.addArguments(DEFAULT_CHROME_OPTS);
+            return Thing.of(chromeOptions);
+        } catch (Exception e) {
+            return Thing.ofError("Can't prepare chrome options");
+        }
+    }
+
+    public void enableDriverBinary() {
         String driverPath = prepareDriver().raiseIfInvalid("nothing to do without temporary driver").get();
         System.setProperty(WEBDRIVER_BIN_PROPERTY_NAME, driverPath);
     }
@@ -59,6 +101,10 @@ public class Webdriver {
         });
     }
 
+    /**
+     * OMG WHAT A MONKEY CODE! Where's your hashmap magic dude?
+     * @return
+     */
     public static Thing<String, ?> findDriverInResources() {
         String suffix;
         if (SystemUtils.IS_OS_LINUX) {
@@ -73,5 +119,32 @@ public class Webdriver {
 
         String resultString = String.format("textorio-chromedriver-bin/release/%s/chromedriver_%s", WEBDRIVER_VERSION, suffix);
         return Thing.of(resultString);
+    }
+
+    /**
+     * OMG WHAT A MONKEY CODE!
+     * @return
+     */
+    public static Thing<String, ?> findChromeExecutable() {
+        String path;
+        if (SystemUtils.IS_OS_LINUX) {
+            path = "/usr/bin/google-chrome"; //or /usr/bin/google-chrome-unstable
+        } else if (SystemUtils.IS_OS_MAC) {
+            path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+        } else if (SystemUtils.IS_OS_WINDOWS) {
+            path = "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
+        } else {
+            return Thing.ofError("Unknown operating system");
+        }
+
+        return Thing.of(path);
+    }
+
+    public ChromeDriver getChromeDriver() {
+        return chromeDriver;
+    }
+
+    public void setChromeDriver(ChromeDriver chromeDriver) {
+        this.chromeDriver = chromeDriver;
     }
 }
