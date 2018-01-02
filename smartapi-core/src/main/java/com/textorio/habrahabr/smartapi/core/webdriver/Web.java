@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
@@ -21,7 +22,7 @@ import java.util.List;
  * https://sites.google.com/a/chromium.org/chromedriver/downloads
  */
 public class Web {
-    Logger logger = LoggerFactory.getLogger(Web.class);
+    private static Logger logger = LoggerFactory.getLogger(Web.class);
     //@see https://sites.google.com/a/chromium.org/chromedriver/getting-started
     public static final String WEBDRIVER_BIN_PROPERTY_NAME = "webdriver.chrome.driver";
     public static final String WEBDRIVER_VERSION = "2.34";
@@ -29,6 +30,7 @@ public class Web {
     public static final String WEBDRIVER_SUFFIX_MAC = "mac64";
     public static final String WEBDRIVER_SUFFIX_WIN = "win32.exe";
     public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36";
+    public static final String CHROME_PROFILE_DIR_NAME = "smartapi-chrome-profile";
 
     public static List<String> DEFAULT_CHROME_OPTS = new ArrayList<>() {{
         add(String.format("--user-agent=%s", USER_AGENT));
@@ -65,6 +67,10 @@ public class Web {
             //@see https://sites.google.com/a/chromium.org/chromedriver/capabilities#TOC-Using-a-Chrome-executable-in-a-non-standard-location
             chromeOptions.setBinary(findChromeExecutable().raiseIfInvalid("Propertly installed Chrome is required").get());
             chromeOptions.addArguments(DEFAULT_CHROME_OPTS);
+
+            String chromeProfileDir = findProfileDirectory().raiseIfInvalid("Really need Chrome profile dir").get();
+            chromeOptions.addArguments(String.format("user-data-dir=%s", chromeProfileDir));
+
             return Thing.of(chromeOptions);
         } catch (Exception e) {
             return Thing.ofError("Can't prepare chrome options");
@@ -139,6 +145,17 @@ public class Web {
         }
 
         return Thing.of(path);
+    }
+
+    public Thing<String, ?> findProfileDirectory() {
+        String profileDir = FileUtils.getTempDirectoryPath() + CHROME_PROFILE_DIR_NAME;
+        try {
+            FileUtils.forceMkdir(new File(profileDir));
+            logger.info(String.format("Embedded Chrome profile directory is: %s", profileDir));
+        } catch (IOException e) {
+            return Thing.ofError("Can't create Embedded Chrome profile directory");
+        }
+        return Thing.of(profileDir);
     }
 
     public ChromeDriver driver() {
