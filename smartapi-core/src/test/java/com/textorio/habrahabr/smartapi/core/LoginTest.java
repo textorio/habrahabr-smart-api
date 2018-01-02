@@ -1,14 +1,14 @@
 package com.textorio.habrahabr.smartapi.core;
 
 import com.textorio.habrahabr.smartapi.core.api.UserResource;
+import com.textorio.habrahabr.smartapi.core.api.UserSettings;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LoginTest {
     @Test
     public void test () {
-        UserResource.create("olegchir", "unknown")
+        UserSettings us = new UserSettings();
+        UserResource.create(us.getEmail(), us.getPassword())
             .raiseIfInvalid("user is required").get()
             .requireLogin();
     }
