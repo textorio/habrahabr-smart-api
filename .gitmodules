@@ -1,0 +1,3 @@
+[submodule "smartapi-core/src/main/resources/textorio-chromedriver-bin"]
+	path = smartapi-core/src/main/resources/textorio-chromedriver-bin
+	url = git@github.com:textorio/textorio-chromedriver-bin.git
