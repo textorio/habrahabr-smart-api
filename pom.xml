@@ -19,6 +19,7 @@
 
 	<modules>
 		<module>smartapi-web</module>
+		<module>smartapi-core</module>
 	</modules>
 
 
