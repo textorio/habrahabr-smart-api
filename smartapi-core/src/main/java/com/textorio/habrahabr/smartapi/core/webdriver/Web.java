@@ -1,5 +1,7 @@
 package com.textorio.habrahabr.smartapi.core.webdriver;
 
+import com.assertthat.selenium_shutterbug.core.PageSnapshot;
+import com.assertthat.selenium_shutterbug.core.Shutterbug;
 import com.textorio.habrahabr.smartapi.core.lang.Thing;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -10,11 +12,17 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.*;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
+import java.util.List;
+
+import static com.assertthat.selenium_shutterbug.utils.web.ScrollStrategy.BOTH_DIRECTIONS;
 
 /**
  * https://sites.google.com/a/chromium.org/chromedriver
@@ -30,6 +38,9 @@ public class Web {
     public static final String WEBDRIVER_SUFFIX_WIN = "win32.exe";
     public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36";
     public static final String CHROME_PROFILE_DIR_NAME = "smartapi-chrome-profile";
+    public static final int BROWSER_WIDTH = 800;
+    public static final int BROWSER_HEIGHT = 600;
+    public static final int DEBUG_SCREENSHOT_SLEEP_INTERVAL = 100;
 
     public static List<String> DEFAULT_CHROME_OPTS = new ArrayList<>() {{
         add(String.format("--user-agent=%s", USER_AGENT));
@@ -60,7 +71,7 @@ public class Web {
     }
 
     public void initializeChromeDriver(ChromeDriver driver) {
-        final Dimension windowSize = new Dimension(1920, 1080); //1080p just for my streaming perversions :
+        final Dimension windowSize = new Dimension(BROWSER_WIDTH, BROWSER_HEIGHT); //1080p just for my streaming perversions :
         driver.manage().window().setSize(windowSize);
     }
 
@@ -170,7 +181,21 @@ public class Web {
     }
 
     public void setAttribute(WebElement element, String attName, String attValue) {
-        driver.executeScript("arguments[0].setAttribute(arguments[1], arguments[2]);",
-                element, attName, attValue);
+        driver.executeScript("arguments[0].setAttribute(arguments[1], arguments[2]);", element, attName, attValue);
+    }
+
+    public Image screenshot() {
+        return Shutterbug.shootPage(driver, BOTH_DIRECTIONS).getImage();
+    }
+
+    public void debugScreenshot() {
+        ImageViewer.run(screenshot(), BROWSER_WIDTH, BROWSER_HEIGHT);
+        while(true) {
+            try {
+                Thread.sleep(DEBUG_SCREENSHOT_SLEEP_INTERVAL);
+            } catch (InterruptedException e) {
+                logger.error("Swing GUI main cycle was interrupted", e);
+            }
+        }
     }
 }

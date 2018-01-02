@@ -8,8 +8,8 @@ public class LoginTest {
     @Test
     public void test () {
         UserSettings us = new UserSettings();
-        UserResource.create(us.getEmail(), us.getPassword())
-            .raiseIfInvalid("user is required").get()
-            .requireLogin();
+        UserResource user = UserResource.create(us.getEmail(), us.getPassword()).raiseIfInvalid("user is required").get();
+        user.requireLogin();
+        user.getWeb().debugScreenshot();
     }
 }
