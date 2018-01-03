@@ -7,9 +7,13 @@ import org.junit.jupiter.api.Test;
 public class LoginTest {
     @Test
     public void test () {
-        UserSettings us = new UserSettings();
-        UserResource user = UserResource.create(us.getEmail(), us.getPassword()).raiseIfInvalid("user is required").get();
-        user.requireLogin();
-        user.getWeb().debugScreenshot();
+        UserResource user = null;
+        try {
+            UserSettings us = new UserSettings();
+            user = UserResource.create(us.getEmail(), us.getPassword()).raiseIfInvalid("user is required").get();
+            user.requireLogin();
+        } finally {
+            user.getWeb().stop();
+        }
     }
 }

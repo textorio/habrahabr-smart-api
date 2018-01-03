@@ -39,30 +39,52 @@ public class Web {
     public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36";
     public static final String CHROME_PROFILE_DIR_NAME = "smartapi-chrome-profile";
     public static final int BROWSER_WIDTH = 800;
-    public static final int BROWSER_HEIGHT = 600;
+    public static final int BROWSER_HEIGHT = 800;
     public static final int DEBUG_SCREENSHOT_SLEEP_INTERVAL = 100;
 
     public static List<String> DEFAULT_CHROME_OPTS = new ArrayList<>() {{
         add(String.format("--user-agent=%s", USER_AGENT));
-        addAll(Arrays.asList("--headless", "--disable-gpu", "--no-sandbox", "--incognito"));
+        addAll(Arrays.asList("--disable-gpu", "--no-sandbox"));
+        add("--incognito");
     }};
 
     private ChromeDriver driver;
+    private WebSettings settings;
 
     public Web init() {
         return init(new WebSettings());
     }
 
+    public void stop() {
+        driver.quit();
+    }
+
     public Web init(WebSettings settings) {
+        this.settings = settings;
         enableDriverBinary();
-        driver = createChromeDriver(settings.getProfileDirName()).raiseIfInvalid("Chrome driver should be prepared").get();
-        initializeChromeDriver(driver);
+        initializeChromeDriver();
         return this;
     }
 
-    public Thing<ChromeDriver, ?> createChromeDriver(Optional<String> profileDirName) {
+    public void restartVisible() {
+        logger.info("Restarting in visible (non-headless) mode.");
+        stop();
+        settings.setVisible(Optional.of(true));
+        initializeChromeDriver();
+        logger.info("Restarting in visible (non-headless) mode - finiashed.");
+    }
+
+    public void restartInvisible() {
+        logger.info("Restarting in invisible (headless) mode.");
+        stop();
+        settings.setVisible(Optional.of(false));
+        initializeChromeDriver();
+        logger.info("Restarting in invisible (headless) mode - finished.");
+    }
+
+    public Thing<ChromeDriver, ?> createChromeDriver(Optional<String> profileDirName, Optional<Boolean> visible) {
         try {
-            ChromeOptions chromeOptions = prepareChromeOptions(profileDirName).raiseIfInvalid("Chrome options should be prepared OK").get();
+            ChromeOptions chromeOptions = prepareChromeOptions(profileDirName, visible).raiseIfInvalid("Chrome options should be prepared OK").get();
             ChromeDriver chromeDriver = new ChromeDriver(chromeOptions);
             return Thing.of(chromeDriver, "Default Chrome driver");
         } catch (Exception e) {
@@ -70,17 +92,22 @@ public class Web {
         }
     }
 
-    public void initializeChromeDriver(ChromeDriver driver) {
+    public void initializeChromeDriver() {
+        driver = createChromeDriver(settings.getProfileDirName(), settings.getVisible()).raiseIfInvalid("Chrome driver should be prepared").get();
         final Dimension windowSize = new Dimension(BROWSER_WIDTH, BROWSER_HEIGHT); //1080p just for my streaming perversions :
         driver.manage().window().setSize(windowSize);
     }
 
-    public Thing<ChromeOptions, ?> prepareChromeOptions(Optional<String> profileDirName) {
+    public Thing<ChromeOptions, ?> prepareChromeOptions(Optional<String> profileDirName, Optional<Boolean> visible) {
         try {
             final ChromeOptions chromeOptions = new ChromeOptions();
             //@see https://sites.google.com/a/chromium.org/chromedriver/capabilities#TOC-Using-a-Chrome-executable-in-a-non-standard-location
             chromeOptions.setBinary(findChromeExecutable().raiseIfInvalid("Propertly installed Chrome is required").get());
             chromeOptions.addArguments(DEFAULT_CHROME_OPTS);
+
+            if (! (null != visible && visible.isPresent() && visible.get()) ) {
+                chromeOptions.addArguments("--headless");
+            }
 
             String chromeProfileDir = findProfileDirectory(profileDirName).raiseIfInvalid("Really need Chrome profile dir").get();
             chromeOptions.addArguments(String.format("user-data-dir=%s", chromeProfileDir));

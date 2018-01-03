@@ -46,6 +46,7 @@ public class UserResource {
         List<WebElement> exitButtons = driver.findElementsByXPath(".//*[@class='exit']");
         if (goButtons.size() > 0) {
             logger.info(String.format("Email %s logged out, trying to log in", email));
+            web.restartVisible();
             login();
         } else if (exitButtons.size() > 0){
             logger.info(String.format("Email %s logged in, we must log out it before anything", email));
@@ -56,6 +57,8 @@ public class UserResource {
 
     public void login() {
         ChromeDriver driver = web.driver();
+        driver.get(HABR_LOGIN_PAGE);
+
         WebElement emailField = driver.findElementByXPath(".//*[@type='email']");
         web.setAttribute(emailField, "value", email);
 
@@ -63,14 +66,18 @@ public class UserResource {
         web.setAttribute(passwordField, "value", password);
 
         WebElement submitButton = driver.findElementByXPath(".//*[@type='submit']");
-        submitButton.click();
 
-        List<WebElement> exitButtons = driver.findElementsByXPath(".//*[@class='exit']");
-        if (exitButtons.size() > 0) {
-            logger.info(String.format("Email %s successfully logged in", email));
-        } else {
-            logger.info(String.format("Email %s logging procedure failed", email));
-        }
+        //now we at this page: https://id.tmtm.ru/settings/?consumer=default
+        //TODO: what's next?
+
+        //submitButton.click();
+
+//        List<WebElement> exitButtons = driver.findElementsByXPath(".//*[@class='exit']");
+//        if (exitButtons.size() > 0) {
+//            logger.info(String.format("Email %s successfully logged in", email));
+//        } else {
+//            logger.info(String.format("Email %s logging procedure failed", email));
+//        }
     }
 
     public Web getWeb() {
