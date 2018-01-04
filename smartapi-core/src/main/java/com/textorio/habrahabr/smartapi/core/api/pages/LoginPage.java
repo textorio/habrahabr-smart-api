@@ -1,6 +1,5 @@
 package com.textorio.habrahabr.smartapi.core.api.pages;
 
-import com.textorio.habrahabr.smartapi.core.lang.Concurrent;
 import com.textorio.habrahabr.smartapi.core.lang.Thing;
 import com.textorio.habrahabr.smartapi.core.webdriver.Web;
 import org.openqa.selenium.WebElement;

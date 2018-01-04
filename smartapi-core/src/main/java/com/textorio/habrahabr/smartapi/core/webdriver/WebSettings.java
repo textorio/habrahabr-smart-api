@@ -15,6 +15,11 @@ public class WebSettings {
         this.id = id;
     }
 
+    public WebSettings visible(boolean value) {
+        this.setVisible(Optional.of(value));
+        return this;
+    }
+
     public Optional<String> getProfileDirName() {
         return profileDirName;
     }

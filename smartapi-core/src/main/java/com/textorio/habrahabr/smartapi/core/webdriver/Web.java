@@ -69,7 +69,11 @@ public class Web {
         driver.quit();
     }
 
-    public Web init(WebSettings settings) {
+    public Web create(WebSettings settings) {
+        return create(settings, true);
+    }
+
+    public Web create(WebSettings settings, boolean initializeDriverAfterCreate) {
         this.settings = settings;
         logger = new SLogger(settings.getId(), staticlogger);
 
@@ -81,7 +85,9 @@ public class Web {
         }
 
         enableDriverBinary();
-        initializeChromeDriver();
+        if (initializeDriverAfterCreate) {
+            initializeChromeDriver();
+        }
         return this;
     }
 
@@ -95,20 +101,32 @@ public class Web {
         }
     }
 
-    public void restartVisible() {
+    public void restart(Optional<Boolean> visible) {
         logger.info("Restarting in visible (non-headless) mode.");
         stop();
-        settings.setVisible(Optional.of(true));
+        if (visible.isPresent()) {
+            settings.setVisible(visible);
+        }
         initializeChromeDriver();
         logger.info("Restarting in visible (non-headless) mode - finished.");
     }
 
+    public void restartVisible() {
+        restart(Optional.of(true));
+    }
+
     public void restartInvisible() {
-        logger.info("Restarting in invisible (headless) mode.");
-        stop();
-        settings.setVisible(Optional.of(false));
-        initializeChromeDriver();
-        logger.info("Restarting in invisible (headless) mode - finished.");
+        restart(Optional.of(false));
+    }
+
+    public void restart() {
+        restart(Optional.empty());
+    }
+
+    public void debugShowBrowser(String page) {
+        restartVisible();
+        driver().get(page);
+        waitWindowClosed();
     }
 
     public Thing<ChromeDriver, ?> createChromeDriver(Optional<String> profileDirName, Optional<Boolean> visible) {
@@ -212,7 +230,9 @@ public class Web {
             path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
         } else if (SystemUtils.IS_OS_WINDOWS) {
             //path = "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
-            path = "Z:\\opt\\ChromeApp\\textorio-chrome.exe";
+            //path = "Z:\\opt\\ChromeApp\\textorio-chrome.exe";
+            //path = "Z:\\opt\\ChromeCanaryApp\\textorio-chrome.exe";;
+            path = "Z:\\opt\\ChromeDefaultApp\\textorio-chrome.exe";;
         } else {
             return Thing.ofError("Unknown operating system");
         }

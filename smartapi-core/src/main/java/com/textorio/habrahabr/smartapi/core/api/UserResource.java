@@ -6,12 +6,10 @@ import com.textorio.habrahabr.smartapi.core.lang.Concurrent;
 import com.textorio.habrahabr.smartapi.core.lang.Thing;
 import com.textorio.habrahabr.smartapi.core.webdriver.Web;
 import com.textorio.habrahabr.smartapi.core.webdriver.WebSettings;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -36,13 +34,17 @@ public class UserResource {
     }
 
     public static Thing<UserResource, ?> create(String username, String email, String password) {
-        WebSettings ws = new WebSettings();
+        return create(Optional.empty(), username, email, password);
+    }
+
+    public static Thing<UserResource, ?> create(Optional<WebSettings> webSettings, String username, String email, String password) {
+        WebSettings ws = webSettings.orElse(new WebSettings());
         ws.setId(username);
         ws.setProfileDirName(Optional.of(String.format("%s-%s", Web.CHROME_PROFILE_DIR_NAME, username)));
 
         Web web;
         try {
-            web = new Web().init(ws);
+            web = new Web().create(ws);
         } catch (Exception e) {
             return Thing.ofError("Can't create Web Token for the user");
         }
@@ -75,7 +77,7 @@ public class UserResource {
             }
         } else if (!ProfilePage.activated(web) && !LoginPage.activated(web)) {
             logger.error("Some strange unknown page encountered while processing a new request.");
-        } if (ProfilePage.activated(web)){
+        } else if (ProfilePage.activated(web)){
             result = true;
             logger.info("You don't need to log in. Lucky bitch!");
         }
@@ -92,6 +94,7 @@ public class UserResource {
         }
 
         LoginPage loginPage = LoginPage.goSlow(web).raiseIfInvalid("We should be on the login page now").get();
+        //web.debugShowBrowser(ProfilePage.HABR_SETTINGS_PAGE);
         loginPage.fill(email, password);
 
         if (automatic) {
