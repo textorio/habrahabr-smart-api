@@ -19,7 +19,7 @@ public class UserResource {
     private static Logger staticLogger = LoggerFactory.getLogger(UserResource.class);
     private SLogger logger;
 
-    public static final boolean DEBUG_SIMULATE_AUTOMATIC_ERROR = true;
+    public static final boolean DEBUG_SIMULATE_AUTOMATIC_ERROR = false;
 
     private String email;
     private String password;

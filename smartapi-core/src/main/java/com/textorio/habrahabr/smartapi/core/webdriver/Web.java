@@ -9,6 +9,7 @@ import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -46,8 +47,12 @@ public class Web {
     public static final int DEBUG_SCREENSHOT_SLEEP_INTERVAL = 100;
     public static final int CONDITION_REACTION_TIMEOUT_SECONDS = 1;
 
-    public static boolean USE_INCOGNITO = false; //debug value
-    public static boolean REMOVE_PROFILE_DIR_BEFORE_START = false;
+    public static boolean USE_CHROME_KILLER = true;
+
+    public static boolean EXTERMINATUS = false;  //debug value
+    public static boolean USE_INCOGNITO = EXTERMINATUS;
+    public static boolean REMOVE_PROFILE_DIR_BEFORE_START = EXTERMINATUS;
+    public static boolean ENSURING_CLEAN_SESSION = !EXTERMINATUS;
 
     public static List<String> DEFAULT_CHROME_OPTS = new ArrayList<>() {{
         add(String.format("--user-agent=%s", USER_AGENT));
@@ -70,6 +75,9 @@ public class Web {
 
         if (REMOVE_PROFILE_DIR_BEFORE_START) {
             removeProfileDir();
+        }
+        if (USE_CHROME_KILLER) {
+            ChromeKiller.killChrome();
         }
 
         enableDriverBinary();
@@ -130,6 +138,7 @@ public class Web {
             if (! (null != visible && visible.isPresent() && visible.get()) ) {
                 chromeOptions.addArguments("--headless");
             }
+            chromeOptions.setCapability(CapabilityType.ForSeleniumServer.ENSURING_CLEAN_SESSION, ENSURING_CLEAN_SESSION);
 
             String chromeProfileDir = findProfileDirectory(profileDirName).raiseIfInvalid("Really need Chrome profile dir").get();
             chromeOptions.addArguments(String.format("user-data-dir=%s", chromeProfileDir));
