@@ -33,4 +33,9 @@ public class SLogger {
         logger.error(String.format(PRINT_FORMAT, username), ex);
     }
 
+    public void error(String message) {
+        logger.error(String.format(PRINT_FORMAT, username));
+    }
+
+
 }

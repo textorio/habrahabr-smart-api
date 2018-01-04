@@ -12,15 +12,27 @@ import java.util.List;
 import java.util.Optional;
 
 public class UserResource {
-    private static Logger logger = LoggerFactory.getLogger(UserResource.class);
+    private static Logger staticLogger = LoggerFactory.getLogger(UserResource.class);
+    private SLogger logger;
 
     public static final String HABR_LOGIN_PAGE = "https://id.tmtm.ru/requireLogin/";
 
     private String email;
     private String password;
+    private String username;
     public Web web;
 
-    public static Thing<UserResource, ?> create(String email, String password) {
+    public UserResource(String username, String email, String password, Web web) {
+        this.logger = new SLogger(username, UserResource.class);
+
+        this.username = username;
+        this.email = email;
+        this.password = password;
+        this.web = web;
+    }
+
+    public static Thing<UserResource, ?> create(String username, String email, String password) {
+
         WebSettings ws = new WebSettings();
         Web web = null;
         try {
@@ -30,12 +42,7 @@ public class UserResource {
             return Thing.ofError("Can't create Web Token for the user");
         }
 
-        UserResource user = new UserResource();
-        user.setWeb(web);
-        user.setEmail(email);
-        user.setPassword(password);
-
-        return Thing.of(user);
+        return Thing.of(new UserResource(username, email, password, web));
     }
 
     public void requireLogin() {
@@ -45,17 +52,17 @@ public class UserResource {
         List<WebElement> goButtons = driver.findElementsByXPath(".//*[@name='go']");
         List<WebElement> exitButtons = driver.findElementsByXPath(".//*[@class='exit']");
         if (goButtons.size() > 0) {
-            logger.info(String.format("Email %s logged out, trying to log in", email));
+            logger.info("We're logged out, trying to log in");
             web.restartVisible();
-            login();
+            login(true);
         } else if (exitButtons.size() > 0){
-            logger.info(String.format("Email %s logged in, we must log out it before anything", email));
+            logger.info(String.format("Logged in successfully. Let's celebrate, bitches!", email));
         } else {
             logger.error("Some strange unknown page encountered while processing a new request.");
         }
     }
 
-    public void login() {
+    public void login(boolean shouldSubmit) {
         ChromeDriver driver = web.driver();
         driver.get(HABR_LOGIN_PAGE);
 
@@ -70,14 +77,17 @@ public class UserResource {
         //now we at this page: https://id.tmtm.ru/settings/?consumer=default
         //TODO: what's next?
 
-        //submitButton.click();
+        if (shouldSubmit) {
+            logger.info("Trying to log in");
+            submitButton.click();
 
-//        List<WebElement> exitButtons = driver.findElementsByXPath(".//*[@class='exit']");
-//        if (exitButtons.size() > 0) {
-//            logger.info(String.format("Email %s successfully logged in", email));
-//        } else {
-//            logger.info(String.format("Email %s logging procedure failed", email));
-//        }
+            List<WebElement> exitButtons = driver.findElementsByXPath(".//*[@class='exit']");
+            if (exitButtons.size() > 0) {
+                logger.info("Logged in");
+            } else {
+                logger.info("Logging in failed");
+            }
+        }
     }
 
     public Web getWeb() {
