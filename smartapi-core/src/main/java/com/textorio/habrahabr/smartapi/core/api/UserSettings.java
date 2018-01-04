@@ -4,6 +4,7 @@ import com.textorio.habrahabr.smartapi.core.lang.Sys;
 import java.util.Properties;
 
 public class UserSettings {
+    private String username;
     private String email;
     private String password;
 
@@ -12,8 +13,17 @@ public class UserSettings {
     }
 
     public UserSettings(Properties userSettings) {
+        username = userSettings.getProperty("username");
         email = userSettings.getProperty("email");
         password = userSettings.getProperty("password");
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getEmail() {

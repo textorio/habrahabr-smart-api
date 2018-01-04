@@ -1,5 +1,8 @@
 package com.textorio.habrahabr.smartapi.core.api;
 
+import com.textorio.habrahabr.smartapi.core.api.pages.LoginPage;
+import com.textorio.habrahabr.smartapi.core.api.pages.ProfilePage;
+import com.textorio.habrahabr.smartapi.core.lang.Concurrent;
 import com.textorio.habrahabr.smartapi.core.lang.Thing;
 import com.textorio.habrahabr.smartapi.core.webdriver.Web;
 import com.textorio.habrahabr.smartapi.core.webdriver.WebSettings;
@@ -10,12 +13,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class UserResource {
     private static Logger staticLogger = LoggerFactory.getLogger(UserResource.class);
     private SLogger logger;
 
-    public static final String HABR_LOGIN_PAGE = "https://id.tmtm.ru/requireLogin/";
+    public static final boolean DEBUG_SIMULATE_AUTOMATIC_ERROR = true;
 
     private String email;
     private String password;
@@ -32,11 +36,12 @@ public class UserResource {
     }
 
     public static Thing<UserResource, ?> create(String username, String email, String password) {
-
         WebSettings ws = new WebSettings();
-        Web web = null;
+        ws.setId(username);
+        ws.setProfileDirName(Optional.of(String.format("%s-%s", Web.CHROME_PROFILE_DIR_NAME, username)));
+
+        Web web;
         try {
-            ws.setProfileDirName(Optional.of(String.format("%s-%s", Web.CHROME_PROFILE_DIR_NAME, email)));
             web = new Web().init(ws);
         } catch (Exception e) {
             return Thing.ofError("Can't create Web Token for the user");
@@ -45,49 +50,89 @@ public class UserResource {
         return Thing.of(new UserResource(username, email, password, web));
     }
 
-    public void requireLogin() {
-        ChromeDriver driver = web.driver();
-        driver.get(HABR_LOGIN_PAGE);
-
-        List<WebElement> goButtons = driver.findElementsByXPath(".//*[@name='go']");
-        List<WebElement> exitButtons = driver.findElementsByXPath(".//*[@class='exit']");
-        if (goButtons.size() > 0) {
-            logger.info("We're logged out, trying to log in");
-            web.restartVisible();
-            login(true);
-        } else if (exitButtons.size() > 0){
-            logger.info(String.format("Logged in successfully. Let's celebrate, bitches!", email));
-        } else {
-            logger.error("Some strange unknown page encountered while processing a new request.");
-        }
+    public ChromeDriver driver() {
+        return web.driver();
     }
 
-    public void login(boolean shouldSubmit) {
-        ChromeDriver driver = web.driver();
-        driver.get(HABR_LOGIN_PAGE);
+    public boolean requireLogin() {
+        boolean result = false;
+        ProfilePage.activateFast(web);
+        if (!ProfilePage.activated(web) && LoginPage.activated(web)) {
+            logger.info("We're logged out, trying to log in using automation");
+            if (!login(true)) {
+                logger.info("Automatic logging failed, using manual mode");
+                web.restartVisible();
+                if (!login(false)) {
+                    logger.error("Manual logging failed. No further attempts to call API result in valid data.");
+                } else {
+                    result = true;
+                    logger.info("Manual logging in OK");
+                    web.restartInvisible();
+                }
+            } else {
+                result = true;
+                logger.info("Logged in successfully. Let's celebrate, bitches!");
+            }
+        } else if (!ProfilePage.activated(web) && !LoginPage.activated(web)) {
+            logger.error("Some strange unknown page encountered while processing a new request.");
+        } if (ProfilePage.activated(web)){
+            result = true;
+            logger.info("You don't need to log in. Lucky bitch!");
+        }
+        return result;
+    }
 
-        WebElement emailField = driver.findElementByXPath(".//*[@type='email']");
-        web.setAttribute(emailField, "value", email);
+    public boolean login(boolean automatic) {
+        //This is not duplication of what's written in requireLogin!
+        //This happens when automated log-in procedure was too fast to detect success
+        LoginPage.activateSlow(web); //may cause redirect to settings page
+        if (ProfilePage.activated(web)) {
+            logger.info("Previous attempts to log in succeeded, no further actions required.");
+            return true;
+        }
 
-        WebElement passwordField = driver.findElementByXPath(".//*[@type='password']");
-        web.setAttribute(passwordField, "value", password);
+        LoginPage loginPage = LoginPage.goSlow(web).raiseIfInvalid("We should be on the login page now").get();
+        loginPage.fill(email, password);
 
-        WebElement submitButton = driver.findElementByXPath(".//*[@type='submit']");
+        if (automatic) {
+            if (DEBUG_SIMULATE_AUTOMATIC_ERROR) {
+                logger.info("Simulation of automatic logging error");
+                return false;
+            }
 
-        //now we at this page: https://id.tmtm.ru/settings/?consumer=default
-        //TODO: what's next?
-
-        if (shouldSubmit) {
             logger.info("Trying to log in");
-            submitButton.click();
+            loginPage.submit();
+            //now we should be at this page: https://id.tmtm.ru/settings/?consumer=default
 
-            List<WebElement> exitButtons = driver.findElementsByXPath(".//*[@class='exit']");
-            if (exitButtons.size() > 0) {
+//            TODO: very ugly! I'll try to change it to a result detection later
+            Concurrent.sleep(web.getSettings().getPageTimeout());
+
+            if (ProfilePage.activated(web)) {
                 logger.info("Logged in");
+                return true;
             } else {
                 logger.info("Logging in failed");
+                return false;
             }
+        } else {
+            final AtomicBoolean success = new AtomicBoolean(true);
+            web.closeWindowAndContinueWhen("Browser should switch to a settings page",
+                    condition -> {
+
+                        // Window should not be closed until user get to the settings page
+                        try {
+                            driver().getTitle();
+                        } catch (Exception ex) {
+                            logger.info("Browser closed, and that's very bad.");
+                            success.set(false);
+                            return true;
+                        }
+
+                        return ProfilePage.activated(web);
+                    });
+            return success.get();
         }
+
     }
 
     public Web getWeb() {
@@ -112,5 +157,13 @@ public class UserResource {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 }

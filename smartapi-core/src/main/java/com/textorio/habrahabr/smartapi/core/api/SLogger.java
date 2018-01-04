@@ -6,35 +6,43 @@ public class SLogger {
     public static final String PRINT_FORMAT = "[@%s] %s";
 
     private Logger logger;
-    private String username;
+    private String id;
 
-    public SLogger(String username, Logger logger) {
+    public SLogger(String id, Logger logger) {
         this.logger = logger;
-        this.username = username;
+        this.id = id;
     }
 
-    public SLogger(String username, Class<?> clazz) {
-        this(username, LoggerFactory.getLogger(clazz));
+    public SLogger(String id, Class<?> clazz) {
+        this(id, LoggerFactory.getLogger(clazz));
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public void info(String message) {
-        logger.info(String.format(PRINT_FORMAT, username));
+        logger.info(String.format(PRINT_FORMAT, id, message));
     }
 
     public void warn(String message) {
-        logger.warn(String.format(PRINT_FORMAT, username));
+        logger.warn(String.format(PRINT_FORMAT, id, message));
     }
 
     public void debug(String message) {
-        logger.debug(String.format(PRINT_FORMAT, username));
+        logger.debug(String.format(PRINT_FORMAT, id, message));
     }
 
     public void error(String message, Exception ex) {
-        logger.error(String.format(PRINT_FORMAT, username), ex);
+        logger.error(String.format(PRINT_FORMAT, id, message), ex);
     }
 
     public void error(String message) {
-        logger.error(String.format(PRINT_FORMAT, username));
+        logger.error(String.format(PRINT_FORMAT, id, message));
     }
 
 

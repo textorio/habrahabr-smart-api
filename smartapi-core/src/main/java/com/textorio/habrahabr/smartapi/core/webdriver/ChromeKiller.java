@@ -12,10 +12,12 @@ public class ChromeKiller {
 
     public static void killChrome() throws IOException {
         if (SystemUtils.IS_OS_WINDOWS) {
-            Runtime.getRuntime().exec("TASKKILL /IM chrome.exe /F");
+            //Runtime.getRuntime().exec("TASKKILL /IM chrome.exe /F");
+            Runtime.getRuntime().exec("TASKKILL /IM textorio-chrome.exe /F");
             Runtime.getRuntime().exec("TASKKILL /IM chromedriver_win32.exe /F");
         } else if (SystemUtils.IS_OS_LINUX) {
-            Runtime.getRuntime().exec("killall google-chrome");
+            //Runtime.getRuntime().exec("killall google-chrome");
+            Runtime.getRuntime().exec("killall textorio-chrome");
             Runtime.getRuntime().exec("killall chromedriver_linux64");
         } else if (SystemUtils.IS_OS_MAC) {
             throw new NotImplementedException("Don't know how to do thin on Macs properly");
