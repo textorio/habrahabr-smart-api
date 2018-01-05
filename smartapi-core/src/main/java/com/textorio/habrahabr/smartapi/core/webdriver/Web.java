@@ -54,7 +54,10 @@ public class Web {
 
     public static List<String> DEFAULT_CHROME_OPTS = new ArrayList<>() {{
         add(String.format("--user-agent=%s", USER_AGENT));
-        addAll(Arrays.asList("--disable-gpu", "--no-sandbox", "--disable-setuid-sandbox"));
+        addAll(Arrays.asList("--disable-gpu", "--no-sandbox", "--disable-setuid-sandbox",
+                "--disable-infobars",
+                "test-type", "start-maximized", "--js-flags=--expose-gc", "--enable-precise-memory-info",
+                "--disable-popup-blocking", "--disable-default-apps", "--app=https://id.tmtm.ru"));
         if (USE_INCOGNITO) {
             add("--incognito");
         }
@@ -147,8 +150,9 @@ public class Web {
 
     public void initializeChromeDriver() {
         driver = createChromeDriver(settings.getProfileDirName(), settings.getVisible()).raiseIfInvalid("Chrome driver should be prepared").get();
-        final Dimension windowSize = new Dimension(BROWSER_WIDTH, BROWSER_HEIGHT); //1080p just for my streaming perversions :
-        driver.manage().window().setSize(windowSize);
+        //Uncomment in case of real urgent problems
+        //final Dimension windowSize = new Dimension(BROWSER_WIDTH, BROWSER_HEIGHT); //1080p just for my streaming perversions :
+        //driver.manage().window().setSize(windowSize);
         driver.manage().timeouts().pageLoadTimeout(10, TimeUnit.SECONDS);
     }
 
