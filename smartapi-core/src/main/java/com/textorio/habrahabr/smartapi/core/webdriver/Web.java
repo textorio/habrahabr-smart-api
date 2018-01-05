@@ -37,7 +37,7 @@ public class Web {
     private SLogger logger;
     //@see https://sites.google.com/a/chromium.org/chromedriver/getting-started
     public static final String WEBDRIVER_BIN_PROPERTY_NAME = "webdriver.chrome.driver";
-    public static final String WEBDRIVER_VERSION = "2.34";
+    public static final String WEBDRIVER_VERSION = "70e554ab5501db7d935af951dea987919642292b";
     public static final String WEBDRIVER_SUFFIX_LINUX = "linux64";
     public static final String WEBDRIVER_SUFFIX_MAC = "mac64";
     public static final String WEBDRIVER_SUFFIX_WIN = "win32.exe";
