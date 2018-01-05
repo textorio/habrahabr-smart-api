@@ -53,6 +53,7 @@ public class Web {
     public static boolean USE_INCOGNITO = false;
 
     public static List<String> DEFAULT_CHROME_OPTS = new ArrayList<>() {{
+        //@see https://peter.sh/experiments/chromium-command-line-switches/
         add(String.format("--user-agent=%s", USER_AGENT));
         addAll(Arrays.asList("--disable-gpu", "--no-sandbox", "--disable-setuid-sandbox",
                 "--disable-infobars",
