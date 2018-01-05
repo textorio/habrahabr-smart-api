@@ -260,7 +260,7 @@ public class Web {
     }
 
     public void setAttribute(WebElement element, String attName, String attValue) {
-        driver.executeScript("arguments[0].setAttribute(arguments[1], arguments[2]);", element, attName, attValue);
+        driver.executeScript("arguments[0].setAttribute(arguments[1], arguments[2]); return true;", element, attName, attValue);
     }
 
     public Image screenshot() {
