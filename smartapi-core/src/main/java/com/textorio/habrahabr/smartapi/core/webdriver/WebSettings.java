@@ -8,6 +8,8 @@ public class WebSettings {
     private Optional<Boolean> visible;
     private Boolean chromedriverHackingEnabled;
     private String chromedriverHackingExe;
+    private boolean removeProfileDirBeforeStart = false;
+    private boolean ensuringCleanSession = true;
     private long pageTimeout = 2000;
 
     public WebSettings() {
@@ -68,5 +70,21 @@ public class WebSettings {
 
     public void setChromedriverHackingExe(String chromedriverHackingExe) {
         this.chromedriverHackingExe = chromedriverHackingExe;
+    }
+
+    public boolean isRemoveProfileDirBeforeStart() {
+        return removeProfileDirBeforeStart;
+    }
+
+    public void setRemoveProfileDirBeforeStart(boolean removeProfileDirBeforeStart) {
+        this.removeProfileDirBeforeStart = removeProfileDirBeforeStart;
+    }
+
+    public boolean isEnsuringCleanSession() {
+        return ensuringCleanSession;
+    }
+
+    public void setEnsuringCleanSession(boolean ensuringCleanSession) {
+        this.ensuringCleanSession = ensuringCleanSession;
     }
 }

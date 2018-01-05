@@ -2,6 +2,7 @@ package com.textorio.habrahabr.smartapi.core.webdriver;
 
 import com.assertthat.selenium_shutterbug.core.Shutterbug;
 import com.textorio.habrahabr.smartapi.core.api.SLogger;
+import com.textorio.habrahabr.smartapi.core.lang.Concurrent;
 import com.textorio.habrahabr.smartapi.core.lang.Thing;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -49,15 +50,11 @@ public class Web {
 
     public static boolean ALWAYS_UPDATE_DRIVER = true;
     public static boolean USE_CHROME_KILLER = true;
-
-    public static boolean EXTERMINATUS = false;  //debug value
-    public static boolean USE_INCOGNITO = EXTERMINATUS;
-    public static boolean REMOVE_PROFILE_DIR_BEFORE_START = EXTERMINATUS;
-    public static boolean ENSURING_CLEAN_SESSION = !EXTERMINATUS;
+    public static boolean USE_INCOGNITO = false;
 
     public static List<String> DEFAULT_CHROME_OPTS = new ArrayList<>() {{
         add(String.format("--user-agent=%s", USER_AGENT));
-        addAll(Arrays.asList("--disable-gpu", "--no-sandbox"));
+        addAll(Arrays.asList("--disable-gpu", "--no-sandbox", "--disable-setuid-sandbox"));
         if (USE_INCOGNITO) {
             add("--incognito");
         }
@@ -78,7 +75,7 @@ public class Web {
         this.settings = settings;
         logger = new SLogger(settings.getId(), staticlogger);
 
-        if (REMOVE_PROFILE_DIR_BEFORE_START) {
+        if (settings.isRemoveProfileDirBeforeStart()) {
             removeProfileDir();
         }
         if (USE_CHROME_KILLER) {
@@ -102,26 +99,34 @@ public class Web {
         }
     }
 
-    public void restart(Optional<Boolean> visible) {
-        logger.info("Restarting in visible (non-headless) mode.");
+    public void restart(Optional<Boolean> visible, boolean superfast) {
+        logger.info("Restarting in different head mode.");
+
+        if (!superfast) {
+            //Always wait a bit before next operation. It's take a time to flush all data to the disk!
+            logger.info("Restarting: firewall timeout");
+            Concurrent.sleep(2000);
+            logger.info("Restarting: firewall timeout finished");
+        }
+
         stop();
         if (visible.isPresent()) {
             settings.setVisible(visible);
         }
         initializeChromeDriver();
-        logger.info("Restarting in visible (non-headless) mode - finished.");
+        logger.info("Restarting in different head mode - finished.");
     }
 
     public void restartVisible() {
-        restart(Optional.of(true));
+        restart(Optional.of(true), false);
     }
 
     public void restartInvisible() {
-        restart(Optional.of(false));
+        restart(Optional.of(false), false);
     }
 
     public void restart() {
-        restart(Optional.empty());
+        restart(Optional.empty(), false);
     }
 
     public void debugShowBrowser(String page) {
@@ -157,7 +162,7 @@ public class Web {
             if (! (null != visible && visible.isPresent() && visible.get()) ) {
                 chromeOptions.addArguments("--headless");
             }
-            chromeOptions.setCapability(CapabilityType.ForSeleniumServer.ENSURING_CLEAN_SESSION, ENSURING_CLEAN_SESSION);
+            chromeOptions.setCapability(CapabilityType.ForSeleniumServer.ENSURING_CLEAN_SESSION, settings.isEnsuringCleanSession());
 
             String chromeProfileDir = findProfileDirectory(profileDirName).raiseIfInvalid("Really need Chrome profile dir").get();
             chromeOptions.addArguments(String.format("user-data-dir=%s", chromeProfileDir));

@@ -1,14 +1,15 @@
 package com.textorio.habrahabr.smartapi.core.api;
 
 import com.textorio.habrahabr.smartapi.core.lang.Sys;
+
 import java.util.Properties;
 
 public class UserSettings {
     private String username;
     private String email;
     private String password;
-    private Boolean firstRun;
-    private Boolean chromedriverHackingEnabled;
+    private boolean firstRun;
+    private boolean chromedriverHackingEnabled;
     private String chromedriverHackingExe;
 
     public UserSettings(String username) {
@@ -21,14 +22,11 @@ public class UserSettings {
         password = userSettings.getProperty("password");
         chromedriverHackingEnabled = Boolean.valueOf(userSettings.getProperty("chromedriver_hacking_enabled"));
         chromedriverHackingExe = userSettings.getProperty("chromedriver_hacking_exe");
+        firstRun = Boolean.valueOf(userSettings.getProperty("first_run"));
     }
 
-    public synchronized boolean getAndUpdateFirstRun() {
-        Properties userSettings = Sys.getUserSettings(username);
-        boolean oldValue = Boolean.valueOf(userSettings.getProperty("first_run"));
-        userSettings.setProperty("first_run", "false");
-        Sys.saveUserSettings(userSettings);
-        return oldValue;
+    public synchronized boolean firstRunCompleted() {
+        return Sys.updateBooleanSetting(username, "first_run", false);
     }
 
     public String getUsername() {
@@ -55,19 +53,19 @@ public class UserSettings {
         this.password = password;
     }
 
-    public Boolean getFirstRun() {
+    public boolean getFirstRun() {
         return firstRun;
     }
 
-    public void setFirstRun(Boolean firstRun) {
+    public void setFirstRun(boolean firstRun) {
         this.firstRun = firstRun;
     }
 
-    public Boolean getChromedriverHackingEnabled() {
+    public boolean getChromedriverHackingEnabled() {
         return chromedriverHackingEnabled;
     }
 
-    public void setChromedriverHackingEnabled(Boolean chromedriverHackingEnabled) {
+    public void setChromedriverHackingEnabled(boolean chromedriverHackingEnabled) {
         this.chromedriverHackingEnabled = chromedriverHackingEnabled;
     }
 

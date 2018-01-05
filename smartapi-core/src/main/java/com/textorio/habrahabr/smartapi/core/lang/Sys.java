@@ -43,6 +43,30 @@ public class Sys {
         }
     }
 
+    public static synchronized boolean updateBooleanSetting(String username, String fieldName, boolean newValue) {
+        Properties userSettings = Sys.getUserSettings(username);
+        boolean oldValue = Boolean.valueOf(userSettings.getProperty(fieldName));
+        userSettings.setProperty(fieldName, Boolean.toString(newValue));
+        Sys.saveUserSettings(userSettings);
+        return oldValue;
+    }
+
+    public static synchronized String updateStringSetting(String username, String fieldName, String newValue) {
+        Properties userSettings = Sys.getUserSettings(username);
+        String oldValue = userSettings.getProperty(fieldName);
+        userSettings.setProperty(fieldName,newValue);
+        Sys.saveUserSettings(userSettings);
+        return oldValue;
+    }
+
+    public static synchronized int updateIntSetting(String username, String fieldName, int newValue) {
+        Properties userSettings = Sys.getUserSettings(username);
+        int oldValue = Integer.parseInt(userSettings.getProperty(fieldName));
+        userSettings.setProperty(fieldName,Integer.toString(newValue));
+        Sys.saveUserSettings(userSettings);
+        return oldValue;
+    }
+
     public static String getSettingsFilePath(String username) {
         return getUserHome() + File.separator + TEXTORIO_SETTINGS_DIR + File.separator + TEXTORIO_HABR_SETTINGS_DIR + File.separator + username;
     }
