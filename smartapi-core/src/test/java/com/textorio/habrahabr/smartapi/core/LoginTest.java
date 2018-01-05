@@ -17,11 +17,15 @@ public class LoginTest {
         boolean loginOK = false;
         UserResource user = null;
         try {
-            UserSettings us = new UserSettings();
-            user = UserResource.create(us.getUsername(), us.getEmail(), us.getPassword()).raiseIfInvalid("user is required").get();
-            //user = UserResource.create(Optional.of(new WebSettings("olegchir").visible(true)), us.getUsername(), us.getEmail(), us.getPassword()).raiseIfInvalid("user is required").get();
+            UserSettings us = new UserSettings("olegchir");
+
+            WebSettings ws = new WebSettings("olegchir");
+            ws.setChromedriverHackingEnabled(us.getChromedriverHackingEnabled());
+            ws.setChromedriverHackingExe(us.getChromedriverHackingExe());
+
+            user = UserResource.create(Optional.of(ws), us.getUsername(), us.getEmail(), us.getPassword()).raiseIfInvalid("user is required").get();
 //            user.getWeb().debugShowBrowser(ProfilePage.HABR_SETTINGS_PAGE); loginOK = true;
-            loginOK = user.requireLogin();
+            loginOK = user.requireLogin(us.getAndUpdateFirstRun());
         } catch (Exception e) {
           e.printStackTrace();
         } finally {

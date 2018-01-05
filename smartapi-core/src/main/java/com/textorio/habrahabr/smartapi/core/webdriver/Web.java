@@ -47,6 +47,7 @@ public class Web {
     public static final int DEBUG_SCREENSHOT_SLEEP_INTERVAL = 100;
     public static final int CONDITION_REACTION_TIMEOUT_SECONDS = 1;
 
+    public static boolean ALWAYS_UPDATE_DRIVER = true;
     public static boolean USE_CHROME_KILLER = true;
 
     public static boolean EXTERMINATUS = false;  //debug value
@@ -173,14 +174,21 @@ public class Web {
     }
 
     public Thing<String, ?> prepareDriver() {
+        if (settings.getChromedriverHackingEnabled()) {
+            logger.info("Chromedriver hacking mode enabled");
+            File driverFile = new File(settings.getChromedriverHackingExe());
+            logger.info(String.format("Chromedriver hacking exe: %s",driverFile.getPath()));
+            return Thing.of(driverFile.getPath());
+        }
+
         return findDriverInResources().raiseIfInvalid("nothing to do without a driver").extract((String driverResource) -> {
             logger.info(String.format("Driver resource: %s",driverResource));
             File tempDirectory = FileUtils.getTempDirectory();
             final File driverFile = new File(tempDirectory, driverResource);
             logger.info(String.format("Temp directory: %s",tempDirectory));
 
-            if (!driverFile.exists()) {
-                // All this variants are not working, including Guava. Deal with it.
+            if (ALWAYS_UPDATE_DRIVER || !driverFile.exists()) {
+                //All this variants are not working, including Guava. Deal with it.
                 //URL resource = Thread.currentThread().getContextClassLoader().getResource(driverResource);
                 //URL resource = this.getClass().getClassLoader().getResource(driverResource);
                 //URL resource = Resources.getResource(this.getClass(), driverResource);
@@ -260,7 +268,7 @@ public class Web {
     }
 
     public void setAttribute(WebElement element, String attName, String attValue) {
-        driver.executeScript("arguments[0].setAttribute(arguments[1], arguments[2]); return true;", element, attName, attValue);
+        driver.executeScript("arguments[0].setAttribute(arguments[1], arguments[2]);", element, attName, attValue);
     }
 
     public Image screenshot() {

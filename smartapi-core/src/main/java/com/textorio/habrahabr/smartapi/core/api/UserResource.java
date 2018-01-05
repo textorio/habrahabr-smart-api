@@ -56,12 +56,12 @@ public class UserResource {
         return web.driver();
     }
 
-    public boolean requireLogin() {
+    public boolean requireLogin(boolean firstRun) {
         boolean result = false;
         ProfilePage.activateFast(web);
         if (!ProfilePage.activated(web) && LoginPage.activated(web)) {
             logger.info("We're logged out, trying to log in using automation");
-            if (!login(true)) {
+            if (firstRun || !login(true)) {
                 logger.info("Automatic logging failed, using manual mode");
                 web.restartVisible();
                 if (!login(false)) {

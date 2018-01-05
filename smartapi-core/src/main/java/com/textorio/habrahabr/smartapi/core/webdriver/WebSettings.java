@@ -6,6 +6,8 @@ public class WebSettings {
     private String id;
     private Optional<String> profileDirName;
     private Optional<Boolean> visible;
+    private Boolean chromedriverHackingEnabled;
+    private String chromedriverHackingExe;
     private long pageTimeout = 2000;
 
     public WebSettings() {
@@ -50,5 +52,21 @@ public class WebSettings {
 
     public void setPageTimeout(long pageTimeout) {
         this.pageTimeout = pageTimeout;
+    }
+
+    public Boolean getChromedriverHackingEnabled() {
+        return chromedriverHackingEnabled;
+    }
+
+    public void setChromedriverHackingEnabled(Boolean chromedriverHackingEnabled) {
+        this.chromedriverHackingEnabled = chromedriverHackingEnabled;
+    }
+
+    public String getChromedriverHackingExe() {
+        return chromedriverHackingExe;
+    }
+
+    public void setChromedriverHackingExe(String chromedriverHackingExe) {
+        this.chromedriverHackingExe = chromedriverHackingExe;
     }
 }
