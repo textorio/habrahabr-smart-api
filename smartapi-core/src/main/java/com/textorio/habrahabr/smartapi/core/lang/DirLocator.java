@@ -1,5 +1,7 @@
 package com.textorio.habrahabr.smartapi.core.lang;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 
 public class DirLocator {
@@ -12,6 +14,10 @@ public class DirLocator {
      */
     public static String getUserHome() {
         return System.getProperty("user.home");
+    }
+
+    public static File getTemp() {
+        return FileUtils.getTempDirectory();
     }
 
     public static String getSettingsFilePath(String username) {

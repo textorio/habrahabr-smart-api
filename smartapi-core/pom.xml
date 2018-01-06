@@ -18,6 +18,8 @@
 		<maven.compiler.source>1.9</maven.compiler.source>
 		<maven.compiler.target>1.9</maven.compiler.target>
 
+		<xz.version>1.8</xz.version>
+		<commons.compress.version>1.15</commons.compress.version>
         <guava.version>23.6-jre</guava.version>
         <jetbrains.annotations.version>15.0</jetbrains.annotations.version>
         <logback.version>1.2.3</logback.version>
@@ -65,12 +67,15 @@
             <version>${guava.version}</version>
         </dependency>
 		<dependency>
-			<groupId>org.b1.pack</groupId>
-			<artifactId>lzma-sdk-4j</artifactId>
-			<version>9.22.0</version>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-compress</artifactId>
+			<version>${commons.compress.version}</version>
 		</dependency>
-
-
+		<dependency>
+			<groupId>org.tukaani</groupId>
+			<artifactId>xz</artifactId>
+			<version>${xz.version}</version>
+		</dependency>
 
 		<!-- Testing -->
         <dependency>
