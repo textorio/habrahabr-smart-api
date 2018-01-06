@@ -64,9 +64,15 @@
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
         </dependency>
+		<dependency>
+			<groupId>org.b1.pack</groupId>
+			<artifactId>lzma-sdk-4j</artifactId>
+			<version>9.22.0</version>
+		</dependency>
 
 
-        <!-- Testing -->
+
+		<!-- Testing -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
