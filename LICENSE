@@ -1,7 +1,7 @@
-This is a read-only source software.
+This is a effectively read-only source software.
 
-You can read its source and build it for yourself (and only for yourself).
-But you can't fork it, publicly modify it, distribute it (with the exception of pull-requests to this repository or discussions in the mailing lists, forums, Facebook and other communication platforms).
-Moreover you can't use it in any kind of project except of this project, especially commercial things.
+You CAN read its source and build it for yourself (and only for yourself).
+You CAN discuss it in mailing lists, forums, Facebook and other communication platforms.
+You CAN create pull-requests after filling Contributor License Agreement.
 
-In the future we may (and probably will) change this to Apache License 2 or Affero GPL 3, but that's not decided yet. It's a read-only for now.
+In ANY other case, default copyright laws apply, meaning that you have no rights to this source code and can't reproduce, distribute, or create derivative works from this work.
