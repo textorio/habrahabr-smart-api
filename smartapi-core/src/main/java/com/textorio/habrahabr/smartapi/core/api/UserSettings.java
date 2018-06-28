@@ -9,6 +9,8 @@ public class UserSettings {
     private String email;
     private String password;
     private boolean firstRun;
+
+    //https://sites.google.com/a/chromium.org/chromedriver/
     private boolean chromedriverHackingEnabled;
     private String chromedriverHackingExe;
 

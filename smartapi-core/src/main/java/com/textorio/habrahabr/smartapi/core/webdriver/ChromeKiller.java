@@ -26,7 +26,9 @@ public class ChromeKiller {
                 Runtime.getRuntime().exec("killall chromedriver_linux64");
                 Runtime.getRuntime().exec("killall chromedriver");
             } else if (SystemUtils.IS_OS_MAC) {
-                throw new NotImplementedException("Don't know how to do thin on Macs properly");
+                Runtime.getRuntime().exec("killall textorio-chrome");
+                Runtime.getRuntime().exec("killall chromedriver_mac64");
+                Runtime.getRuntime().exec("killall chromedriver");
             } else {
                 throw new NotImplementedException("Only Windows, Mac and GNU/Linux are supported");
             }

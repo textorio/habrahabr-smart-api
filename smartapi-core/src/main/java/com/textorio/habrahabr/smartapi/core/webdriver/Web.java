@@ -245,7 +245,10 @@ public class Web {
         if (SystemUtils.IS_OS_LINUX) {
             path = "/usr/bin/google-chrome"; //or /usr/bin/google-chrome-unstable
         } else if (SystemUtils.IS_OS_MAC) {
-            path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+            //path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+            path = "~/.textorio/opt/chrome-mac/Chromium.app/Contents/MacOS/textorio-chrome";
+            path = path.replaceFirst("^~",System.getProperty("user.home"));
+            //https://stackoverflow.com/questions/7163364/how-to-handle-in-file-paths
         } else if (SystemUtils.IS_OS_WINDOWS) {
             //path = "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
             //path = "Z:\\opt\\ChromeApp\\textorio-chrome.exe";
