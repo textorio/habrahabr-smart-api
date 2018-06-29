@@ -25,7 +25,9 @@ import java.io.*;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -43,7 +45,22 @@ public class UserResource {
     private String username;
     public Web web;
 
-    public String downloadScreenshot(String ytid, int time, SubimageSize size, String destFile, boolean followUp) throws InterruptedException, IOException, URISyntaxException {
+    public HashMap<String, String> downloadScreenshots(String ytid, SubimageSize size, String destDir, int[] times) throws IOException, InterruptedException {
+        HashMap<String, String> result = new HashMap<>();
+        boolean firstTime = true;
+        for (int i=0; i< times.length; i++) {
+            int time = times[i];
+            String destFile = destDir + File.separator + Integer.toString(i) + ".jpg";
+            downloadScreenshot(ytid, time, size, destFile, !firstTime);
+            result.put(Integer.toString(time), destFile);
+            if (firstTime) {
+                firstTime = false;
+            }
+        }
+        return result;
+    }
+
+    public String downloadScreenshot(String ytid, int time, SubimageSize size, String destFile, boolean followUp) throws InterruptedException, IOException {
         String ytUrl = String.format("https://www.youtube.com/watch?v=%s", ytid);
         if (!followUp) {
             web.debugShowBrowser(ytUrl);

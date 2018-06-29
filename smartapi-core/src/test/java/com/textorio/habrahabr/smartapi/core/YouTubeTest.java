@@ -7,6 +7,8 @@ import com.textorio.habrahabr.smartapi.core.lang.SubimageSize;
 import com.textorio.habrahabr.smartapi.core.webdriver.WebSettings;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,12 +31,12 @@ public class YouTubeTest {
             user = UserResource.create(Optional.of(ws), us.getUsername(), us.getEmail(), us.getPassword()).raiseIfInvalid("user is required").get();
 
             SubimageSize size = new SubimageSize(0,0, 1920, 1080);
-            user.downloadScreenshot("EgsA9cMVf9Q",1000, size, "/Users/olegchir/tmp/a1.jpg",false);
-            user.downloadScreenshot("EgsA9cMVf9Q",500, size, "/Users/olegchir/tmp/a2.jpg",true);
-            user.downloadScreenshot("EgsA9cMVf9Q",1000, size, "/Users/olegchir/tmp/a3.jpg",true);
-            user.downloadScreenshot("EgsA9cMVf9Q",500, size, "/Users/olegchir/tmp/a4.jpg",true);
-            user.downloadScreenshot("EgsA9cMVf9Q",1000, size, "/Users/olegchir/tmp/a5.jpg",true);
+            String path = "/Users/olegchir/tmp/img";
 
+            HashMap<String, String> result = user.downloadScreenshots("EgsA9cMVf9Q", size, path, new int[]{1000, 500, 1000, 500, 1000});
+            for (Map.Entry<String, String> item: result.entrySet()) {
+                System.out.println(String.format("%s = %s", item.getKey(), item.getValue()));
+            }
 
         } catch (Exception e) {
           e.printStackTrace();
