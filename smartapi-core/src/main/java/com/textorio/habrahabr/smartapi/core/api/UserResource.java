@@ -1,5 +1,9 @@
 package com.textorio.habrahabr.smartapi.core.api;
 
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.JsonNode;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 import com.textorio.habrahabr.smartapi.core.api.pages.LoginPage;
 import com.textorio.habrahabr.smartapi.core.api.pages.ProfilePage;
 import com.textorio.habrahabr.smartapi.core.lang.Concurrent;
@@ -52,11 +56,31 @@ public class UserResource {
             int time = times[i];
             String destFile = destDir + File.separator + Integer.toString(i) + ".jpg";
             downloadScreenshot(ytid, time, size, destFile, !firstTime);
-            result.put(Integer.toString(time), destFile);
+            String imgurFile = uploadFile(destFile);
+            result.put(Integer.toString(time), imgurFile);
             if (firstTime) {
                 firstTime = false;
             }
         }
+        return result;
+    }
+
+    public String uploadFile(String filename) {
+        String result = "";
+
+        String endpoint = "https://api.imgur.com/3/image";
+        String accessToken = "Bearer "+System.getProperty("IMGUR_ACCESS_TOKEN");
+
+        try {
+            HttpResponse<JsonNode> uploadResponse = Unirest.post(endpoint)
+                    .header("Authorization", accessToken)
+                    .field("image", new File(filename))
+                    .asJson();
+            result = uploadResponse.getBody().getObject().getJSONObject("data").getString("link");
+        } catch (UnirestException e) {
+            e.printStackTrace();
+        }
+
         return result;
     }
 
@@ -86,9 +110,6 @@ public class UserResource {
         saveImageFromBase64String((String)result, size, destFile);
 
         System.out.println(result);
-
-        analyzeLog();
-
         return "";
     }
 
