@@ -1,5 +1,9 @@
 package com.textorio.habrahabr.smartapi.core.api;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
@@ -29,10 +33,7 @@ import java.io.*;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -51,18 +52,44 @@ public class UserResource {
 
     public HashMap<String, String> downloadScreenshots(String ytid, SubimageSize size, String destDir, int[] times) throws IOException, InterruptedException {
         HashMap<String, String> result = new HashMap<>();
+        if (cacheExists()) {
+            result = loadCache();
+        }
         boolean firstTime = true;
         for (int i=0; i< times.length; i++) {
             int time = times[i];
-            String destFile = destDir + File.separator + Integer.toString(i) + ".jpg";
-            downloadScreenshot(ytid, time, size, destFile, !firstTime);
-            String imgurFile = uploadFile(destFile);
-            result.put(Integer.toString(time), imgurFile);
-            if (firstTime) {
-                firstTime = false;
+            String key = Integer.toString(time);
+
+            if (!result.containsKey(key)) {
+                String destFile = destDir + File.separator + Integer.toString(i) + ".jpg";
+                downloadScreenshot(ytid, time, size, destFile, !firstTime);
+                String imgurFile = uploadFile(destFile);
+                result.put(key, imgurFile);
+                if (firstTime) {
+                    firstTime = false;
+                }
             }
         }
+        saveCache(result);
         return result;
+    }
+
+    public static final String cacheFileName = "/Users/olegchir/tmp/img/imgcache.json";
+
+    public boolean cacheExists() {
+        return Files.exists(Paths.get(cacheFileName));
+    }
+
+    public HashMap<String, String> loadCache() throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        HashMap<String, String> items = mapper.readValue(new File(cacheFileName), new TypeReference<HashMap<String, String>>(){});
+        return items;
+    }
+
+    public void saveCache(HashMap<String, String> items) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectWriter writer = mapper.writer(new DefaultPrettyPrinter());
+        writer.writeValue(new File(cacheFileName), items);
     }
 
     public String uploadFile(String filename) {
