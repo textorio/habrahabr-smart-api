@@ -6,12 +6,23 @@ import com.textorio.habrahabr.smartapi.core.lang.Concurrent;
 import com.textorio.habrahabr.smartapi.core.lang.Thing;
 import com.textorio.habrahabr.smartapi.core.webdriver.Web;
 import com.textorio.habrahabr.smartapi.core.webdriver.WebSettings;
+import org.apache.commons.codec.binary.Base64;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static com.textorio.habrahabr.smartapi.core.webdriver.Web.CONDITION_REACTION_TIMEOUT_SECONDS;
 
 public class UserResource {
     private static Logger staticLogger = LoggerFactory.getLogger(UserResource.class);
@@ -23,6 +34,59 @@ public class UserResource {
     private String password;
     private String username;
     public Web web;
+
+    public String downloadScreenshot(String ytid, String time) throws InterruptedException, IOException {
+
+        String ytUrl = "https://www.youtube.com/watch?v=zxmJeLUEadg";
+        web.debugShowBrowser(ytUrl);
+        Thread.sleep(10000);
+        //web.driver().get(ytUrl);
+        web.driver().executeScript("window.lastResult = undefined;\n" +
+                "requestId = 0;\n" +
+                "\n" +
+                "(async function () {\n" +
+                "    var LRRequest = (function () {\n" +
+                "\n" +
+                "        function getData() {\n" +
+                "            var id = requestId++;\n" +
+                "\n" +
+                "            return new Promise(function (resolve, reject) {\n" +
+                "                var listener = function (evt) {\n" +
+                "                    if (evt.detail.requestId == id) {\n" +
+                "                        window.removeEventListener(\"lastresult_data\", listener);\n" +
+                "                        resolve(evt.detail.data);\n" +
+                "                    }\n" +
+                "                };\n" +
+                "\n" +
+                "                window.addEventListener(\"lastresult_data\", listener);\n" +
+                "\n" +
+                "                var payload = {id: id};\n" +
+                "\n" +
+                "                window.dispatchEvent(new CustomEvent(\"lastresult\", {detail: payload}));\n" +
+                "            });\n" +
+                "        }\n" +
+                "\n" +
+                "        return {getData: getData};\n" +
+                "    })();\n" +
+                "\n" +
+                "    LRRequest.getData().then(function (data) {\n" +
+                "        window.lastResult = data;\n" +
+                "    });\n" +
+                "\n" +
+                "    return await LRRequest.getData();\n" +
+                "})(); return true;\n");
+
+        WebDriverWait wait = new WebDriverWait(web.driver(), 20);
+        wait.until(driver -> ((JavascriptExecutor)driver).executeScript("return window.lastResult != undefined;").equals(true));
+        Object result = driver().executeScript("return window.lastResult;");
+        byte[] data = Base64.decodeBase64((String)result);
+        try (OutputStream stream = new FileOutputStream("/Users/olegchir/tmp/a.jpg")) {
+            stream.write(data);
+        }
+        System.out.println(result);
+
+        return "";
+    }
 
     public UserResource(String username, String email, String password, Web web) {
         this.logger = new SLogger(username, UserResource.class);

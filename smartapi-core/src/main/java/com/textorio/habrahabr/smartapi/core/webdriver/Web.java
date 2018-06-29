@@ -136,7 +136,7 @@ public class Web {
     public void debugShowBrowser(String page) {
         restartVisible();
         driver().get(page);
-        waitWindowClosed();
+        //waitWindowClosed();
     }
 
     public Thing<ChromeDriver, ?> createChromeDriver(Optional<String> profileDirName, Optional<Boolean> visible) {
@@ -168,6 +168,9 @@ public class Web {
                 chromeOptions.addArguments("--headless");
             }
             chromeOptions.setCapability(CapabilityType.ForSeleniumServer.ENSURING_CLEAN_SESSION, settings.isEnsuringCleanSession());
+
+            //options.addExtensions(new File("/path/to/extension.crx"));
+            chromeOptions.addArguments("load-extension=/Users/olegchir/git/pauseplugin");
 
             String chromeProfileDir = findProfileDirectory(profileDirName).raiseIfInvalid("Really need Chrome profile dir").get();
             chromeOptions.addArguments(String.format("user-data-dir=%s", chromeProfileDir));
