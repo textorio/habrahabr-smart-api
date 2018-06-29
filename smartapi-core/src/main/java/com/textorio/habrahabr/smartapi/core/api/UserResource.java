@@ -3,6 +3,7 @@ package com.textorio.habrahabr.smartapi.core.api;
 import com.textorio.habrahabr.smartapi.core.api.pages.LoginPage;
 import com.textorio.habrahabr.smartapi.core.api.pages.ProfilePage;
 import com.textorio.habrahabr.smartapi.core.lang.Concurrent;
+import com.textorio.habrahabr.smartapi.core.lang.SubimageSize;
 import com.textorio.habrahabr.smartapi.core.lang.Thing;
 import com.textorio.habrahabr.smartapi.core.webdriver.Web;
 import com.textorio.habrahabr.smartapi.core.webdriver.WebSettings;
@@ -10,15 +11,21 @@ import org.apache.commons.codec.binary.Base64;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.logging.LogEntries;
+import org.openqa.selenium.logging.LogEntry;
+import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Date;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -36,19 +43,22 @@ public class UserResource {
     private String username;
     public Web web;
 
-    public String downloadScreenshot(String ytid, String time) throws InterruptedException, IOException, URISyntaxException {
+    public String downloadScreenshot(String ytid, int time, SubimageSize size, String destFile, boolean followUp) throws InterruptedException, IOException, URISyntaxException {
+        String ytUrl = String.format("https://www.youtube.com/watch?v=%s", ytid);
+        if (!followUp) {
+            web.debugShowBrowser(ytUrl);
+            Thread.sleep(10000);
+        }
 
+        String screenshotMaker = getResourceFileAsString("screenshot-maker.js");
+        web.driver().executeScript(screenshotMaker,time);
+        WebDriverWait wait3 = new WebDriverWait(web.driver(), 50);
 
+        Thread.sleep(5000);
 
-        String ytUrl = "https://www.youtube.com/watch?v=EgsA9cMVf9Q";
-        web.debugShowBrowser(ytUrl);
-        Thread.sleep(10000);
-        //web.driver().get(ytUrl);
+        wait3.until(driver -> ((JavascriptExecutor)driver).executeScript("return window.screenshotFired != undefined;").equals(true));
 
-        String summoner2 = getResourceFileAsString("order.js");
-        web.driver().executeScript(summoner2);
-        WebDriverWait wait2 = new WebDriverWait(web.driver(), 20);
-        wait2.until(driver -> ((JavascriptExecutor)driver).executeScript("return window.screenshotOK;").equals(true));
+        Thread.sleep(3000);
 
         String summoner = getResourceFileAsString("lastresult-summoner.js");
         web.driver().executeScript(summoner);
@@ -56,14 +66,21 @@ public class UserResource {
         wait.until(driver -> ((JavascriptExecutor)driver).executeScript("return window.lastResult != undefined;").equals(true));
 
         Object result = driver().executeScript("return window.lastResult;");
-        byte[] data = Base64.decodeBase64((String)result);
-        try (OutputStream stream = new FileOutputStream("/Users/olegchir/tmp/a.jpg")) {
-            stream.write(data);
-        }
+        saveImageFromBase64String((String)result, size, destFile);
 
         System.out.println(result);
 
+        analyzeLog();
+
         return "";
+    }
+
+    public void saveImageFromBase64String(String image, SubimageSize size, String destination) throws IOException {
+        byte[] data = Base64.decodeBase64((String)image);
+        ByteArrayInputStream bis = new ByteArrayInputStream(data);
+        BufferedImage bImage2 = ImageIO.read(bis);
+        BufferedImage bImage3 = bImage2.getSubimage(size.x,size.y, size.width, size.height);
+        ImageIO.write(bImage3, "jpg", new File(destination) );
     }
 
     public String getResourceFileAsString(String fileName) {
@@ -73,6 +90,14 @@ public class UserResource {
             return reader.lines().collect(Collectors.joining(System.lineSeparator()));
         }
         return null;
+    }
+
+    public void analyzeLog() {
+        LogEntries logEntries = web.driver().manage().logs().get(LogType.BROWSER);
+        for (LogEntry entry : logEntries) {
+            System.out.println(new Date(entry.getTimestamp()) + " " + entry.getLevel() + " " + entry.getMessage());
+            //do something useful with the data
+        }
     }
 
     public UserResource(String username, String email, String password, Web web) {

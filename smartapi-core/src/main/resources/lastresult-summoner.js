@@ -29,8 +29,6 @@ requestId = 0;
     LRRequest.getData().then(function (data) {
         window.lastResult = data;
     });
-
-    return await LRRequest.getData();
 })();
 
 console.log("summoner ok");

@@ -10,6 +10,8 @@ import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.logging.LogType;
+import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -25,6 +27,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 import static com.assertthat.selenium_shutterbug.utils.web.ScrollStrategy.BOTH_DIRECTIONS;
 
@@ -172,6 +175,10 @@ public class Web {
             //options.addExtensions(new File("/path/to/extension.crx"));
             chromeOptions.addArguments("load-extension=/Users/olegchir/git/pauseplugin");
             chromeOptions.addArguments("autoplay-policy=no-user-gesture-required");
+
+            LoggingPreferences logPrefs = new LoggingPreferences();
+            logPrefs.enable(LogType.BROWSER, Level.ALL);
+            chromeOptions.setCapability(CapabilityType.LOGGING_PREFS, logPrefs);
 
             String chromeProfileDir = findProfileDirectory(profileDirName).raiseIfInvalid("Really need Chrome profile dir").get();
             chromeOptions.addArguments(String.format("user-data-dir=%s", chromeProfileDir));
