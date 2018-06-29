@@ -171,6 +171,7 @@ public class Web {
 
             //options.addExtensions(new File("/path/to/extension.crx"));
             chromeOptions.addArguments("load-extension=/Users/olegchir/git/pauseplugin");
+            chromeOptions.addArguments("autoplay-policy=no-user-gesture-required");
 
             String chromeProfileDir = findProfileDirectory(profileDirName).raiseIfInvalid("Really need Chrome profile dir").get();
             chromeOptions.addArguments(String.format("user-data-dir=%s", chromeProfileDir));

@@ -15,12 +15,13 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static com.textorio.habrahabr.smartapi.core.webdriver.Web.CONDITION_REACTION_TIMEOUT_SECONDS;
 
@@ -35,57 +36,43 @@ public class UserResource {
     private String username;
     public Web web;
 
-    public String downloadScreenshot(String ytid, String time) throws InterruptedException, IOException {
+    public String downloadScreenshot(String ytid, String time) throws InterruptedException, IOException, URISyntaxException {
 
-        String ytUrl = "https://www.youtube.com/watch?v=zxmJeLUEadg";
+
+
+        String ytUrl = "https://www.youtube.com/watch?v=EgsA9cMVf9Q";
         web.debugShowBrowser(ytUrl);
         Thread.sleep(10000);
         //web.driver().get(ytUrl);
-        web.driver().executeScript("window.lastResult = undefined;\n" +
-                "requestId = 0;\n" +
-                "\n" +
-                "(async function () {\n" +
-                "    var LRRequest = (function () {\n" +
-                "\n" +
-                "        function getData() {\n" +
-                "            var id = requestId++;\n" +
-                "\n" +
-                "            return new Promise(function (resolve, reject) {\n" +
-                "                var listener = function (evt) {\n" +
-                "                    if (evt.detail.requestId == id) {\n" +
-                "                        window.removeEventListener(\"lastresult_data\", listener);\n" +
-                "                        resolve(evt.detail.data);\n" +
-                "                    }\n" +
-                "                };\n" +
-                "\n" +
-                "                window.addEventListener(\"lastresult_data\", listener);\n" +
-                "\n" +
-                "                var payload = {id: id};\n" +
-                "\n" +
-                "                window.dispatchEvent(new CustomEvent(\"lastresult\", {detail: payload}));\n" +
-                "            });\n" +
-                "        }\n" +
-                "\n" +
-                "        return {getData: getData};\n" +
-                "    })();\n" +
-                "\n" +
-                "    LRRequest.getData().then(function (data) {\n" +
-                "        window.lastResult = data;\n" +
-                "    });\n" +
-                "\n" +
-                "    return await LRRequest.getData();\n" +
-                "})(); return true;\n");
 
+        String summoner2 = getResourceFileAsString("order.js");
+        web.driver().executeScript(summoner2);
+        WebDriverWait wait2 = new WebDriverWait(web.driver(), 20);
+        wait2.until(driver -> ((JavascriptExecutor)driver).executeScript("return window.screenshotOK;").equals(true));
+
+        String summoner = getResourceFileAsString("lastresult-summoner.js");
+        web.driver().executeScript(summoner);
         WebDriverWait wait = new WebDriverWait(web.driver(), 20);
         wait.until(driver -> ((JavascriptExecutor)driver).executeScript("return window.lastResult != undefined;").equals(true));
+
         Object result = driver().executeScript("return window.lastResult;");
         byte[] data = Base64.decodeBase64((String)result);
         try (OutputStream stream = new FileOutputStream("/Users/olegchir/tmp/a.jpg")) {
             stream.write(data);
         }
+
         System.out.println(result);
 
         return "";
+    }
+
+    public String getResourceFileAsString(String fileName) {
+        InputStream is = getClass().getClassLoader().getResourceAsStream(fileName);
+        if (is != null) {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            return reader.lines().collect(Collectors.joining(System.lineSeparator()));
+        }
+        return null;
     }
 
     public UserResource(String username, String email, String password, Web web) {

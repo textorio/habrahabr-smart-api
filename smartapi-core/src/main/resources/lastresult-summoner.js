@@ -32,3 +32,5 @@ requestId = 0;
 
     return await LRRequest.getData();
 })();
+
+console.log("summoner ok");
