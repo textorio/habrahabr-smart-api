@@ -16,7 +16,9 @@ import com.textorio.habrahabr.smartapi.core.lang.Thing;
 import com.textorio.habrahabr.smartapi.core.webdriver.Web;
 import com.textorio.habrahabr.smartapi.core.webdriver.WebSettings;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.json.JSONException;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -54,23 +56,83 @@ public class UserResource {
     private String username;
     public Web web;
 
+    public String replaceSources(String textFile, HashMap<String, String> data) {
+        boolean speakerSyncProtocol = true;
+
+        List<String> lines = getResourceFileAsList(textFile);
+        List<String> results = new ArrayList<>();
+
+        boolean rawMode = false;
+        Matcher matcher;
+        for (String line: lines) {
+            if (line.startsWith("//fullscreen") ||
+                    line.startsWith("//left") ||
+                    line.startsWith("//right") ||
+                    StringUtils.isBlank(line)
+            ) {
+                if (!speakerSyncProtocol) {
+                    continue;
+                } else if (!StringUtils.isBlank(line)) {
+                    results.add(rawMode ? line : renderParagraphHTML(line));
+                    continue;
+                }
+            } else {
+                String updatedLine = line;
+
+                if (line.startsWith("//cut")) {
+                    updatedLine = "<cut/>";
+                } if (line.startsWith("//+raw")) {
+                    rawMode = true;
+                    continue;
+                } else if (line.startsWith("//-raw")) {
+                    rawMode = false;
+                    continue;
+                } else {
+
+                    boolean isImage = false;
+                    for (Pattern pattern: timeTagPatterns()) {
+                        matcher = pattern.matcher(updatedLine);
+                        while (matcher.find()) {
+                            String found = matcher.group(0);
+                            String foundWithoutTag = found.replaceAll("//", "");
+                            String time = stringToTime(foundWithoutTag);
+                            if (time != null) {
+                                updatedLine = updatedLine.replaceAll(found, renderImageHTML(data.get(time), time));
+                                isImage = true;
+                            }
+                        }
+                    }
+
+                    if (!isImage) {
+                        updatedLine = rawMode ? updatedLine : renderParagraphHTML(updatedLine);
+                    }
+                }
+
+                results.add(updatedLine);
+            }
+        }
+
+        StringBuilder result = new StringBuilder();
+        for (String line: results) {
+            result.append(line).append("\n\n");
+        }
+
+        return result.toString();
+    }
+
     public List<Pair<String, SubimageSize>> extractSources (String textFile) throws UnirestException {
         String slideMode = "fullscreen";
         HashMap<String, SubimageSize> slideModes = new HashMap<>();
         slideModes.put("fullscreen",  new SubimageSize(0,0, 1920, 1080));
-        slideModes.put("left",  new SubimageSize(0,136, 1434, 806));
-        slideModes.put("right",  new SubimageSize(496,144, 1413, 795));
+        slideModes.put("fullscreen_dirty",  new SubimageSize(18,12, 1405, 784));
+        slideModes.put("left",  new SubimageSize(20,152, 1400, 750));
+        slideModes.put("right",  new SubimageSize(514,226, 1371, 681));
 
 
         List<String> inputs = getResourceFileAsList(textFile);
         List<Pair<String, SubimageSize>> result = new ArrayList<>();
 
-        Pattern HHMMSS = Pattern.compile("\\d+:\\d+:\\d+");
-        Pattern MMSS = Pattern.compile("\\d+:\\d+");
-        //Pattern SS = Pattern.compile("\\d+");//Секунды обязательно в квадратных скобках!
-        List<Pattern> patterns = Arrays.asList(HHMMSS,MMSS);
         Matcher matcher;
-
         for (String input: inputs) {
             if (input.startsWith("//fullscreen")) {
                 slideMode = "fullscreen";
@@ -83,27 +145,11 @@ public class UserResource {
                 continue;
             }
 
-            for (Pattern pattern: patterns) {
+            for (Pattern pattern: timePatterns()) {
                 matcher = pattern.matcher(input);
                 while (matcher.find()) {
                     String found = matcher.group(0);
-
-                    String[] components = found.split(":");
-                    String time = null;
-                    if (components.length == 3) {
-                        int hourSecs = 3600 * Integer.parseInt(components[0]);
-                        int minSecs = 60 * Integer.parseInt(components[1]);
-                        int secs = Integer.parseInt(components[2]);
-                        int sumSecs = hourSecs + minSecs + secs;
-                        time = Integer.toString(sumSecs);
-                    } else if (components.length == 2) {
-                        int minSecs = 60 * Integer.parseInt(components[0]);
-                        int secs = Integer.parseInt(components[1]);
-                        int sumSecs = minSecs + secs;
-                        time = Integer.toString(sumSecs);
-                    } else {
-                        System.out.println("unsupported time format: "+time);
-                    }
+                    String time = stringToTime(found);
                     if (time != null) {
                         result.add(Pair.of(time, slideModes.get(slideMode)));
                     }
@@ -111,6 +157,95 @@ public class UserResource {
             }
         }
         return result;
+    }
+
+    public String renderParagraphHTML(String line) {
+        if (line == null) {
+            return null;
+        }
+
+        String template = "<p>%s</p>";
+        String rendered = String.format(template, line);
+        return rendered;
+    }
+
+    public String renderImageHTML(String src, String srcTime) {
+        String rendered = "";
+        if (srcTime != null) {
+            String imageTemplate = "<p>//%s</p>\n<p><img src=\"%s\"></p>";
+            rendered = String.format(imageTemplate, timeToString(srcTime), src);
+        } else {
+            String imageTemplate = "<p><img src=\"%s\"></p>";
+            rendered = String.format(imageTemplate, src);
+        }
+        return rendered;
+    }
+
+    public List<Pattern>  timePatterns() {
+        Pattern HHMMSS = Pattern.compile("\\d+:\\d+:\\d+");
+        Pattern MMSS = Pattern.compile("\\d+:\\d+");
+        //Pattern SS = Pattern.compile("\\d+");//Секунды обязательно в квадратных скобках!
+        List<Pattern> TIME_PATTERNS = Arrays.asList(HHMMSS,MMSS);
+        return TIME_PATTERNS;
+    }
+
+    public List<Pattern>  timeTagPatterns() {
+        Pattern HHMMSS = Pattern.compile("//\\d+:\\d+:\\d+");
+        Pattern MMSS = Pattern.compile("//\\d+:\\d+");
+        //Pattern SS = Pattern.compile("//\\d+");//Секунды обязательно в квадратных скобках!
+        List<Pattern> TIME_PATTERNS = Arrays.asList(HHMMSS,MMSS);
+        return TIME_PATTERNS;
+    }
+
+    public static String timeToString(String time)
+    {
+        int itime = Integer.parseInt(time);
+
+        int hours = itime / 3600;
+        int secondsLeft = itime - hours * 3600;
+        int minutes = secondsLeft / 60;
+        int seconds = secondsLeft - minutes * 60;
+
+        String result = "";
+
+//        if (hours < 10)
+//            result += "0";
+//        result += hours + ":";
+
+        if (hours > 0) {
+            result += hours;
+        }
+
+        if (minutes < 10 && hours > 0) {
+            result += "0";
+        }
+        result += minutes + ":";
+
+        if (seconds < 10 && minutes > 0)
+            result += "0";
+        result += seconds ;
+
+        return result;
+    }
+
+    public String stringToTime(String found) {
+        String[] components = found.split(":");
+        String time = null;
+        if (components.length == 3) {
+            int hourSecs = 3600 * Integer.parseInt(components[0]);
+            int minSecs = 60 * Integer.parseInt(components[1]);
+            int secs = Integer.parseInt(components[2]);
+            int sumSecs = hourSecs + minSecs + secs;
+            time = Integer.toString(sumSecs);
+        } else if (components.length == 2) {
+            int minSecs = 60 * Integer.parseInt(components[0]);
+            int secs = Integer.parseInt(components[1]);
+            int sumSecs = minSecs + secs;
+            time = Integer.toString(sumSecs);
+        } else {
+            time = null;
+        }
+        return time;
     }
 
     public static int[] convertIntegers(List<Integer> integers)
@@ -124,12 +259,29 @@ public class UserResource {
         return ret;
     }
 
+    public String processText(String ytid, String destDir, String textFile, String destTextFile) throws IOException, InterruptedException, UnirestException {
+        String updatedText = processText(ytid, destDir, textFile);
+
+        File destText = new File(destTextFile);
+        if (destText.exists()) {
+            destText.delete();
+        }
+
+        Files.write(Paths.get(destTextFile), updatedText.getBytes());
+        return updatedText;
+    }
+
+    public String processText(String ytid, String destDir, String textFile) throws IOException, InterruptedException, UnirestException {
+        HashMap<String, String> sources = downloadScreenshots(ytid, destDir, extractSources(textFile));
+        String result = replaceSources(textFile, sources);
+        return result;
+    }
 
     public HashMap<String, String> downloadScreenshots(String ytid, String destDir, String textFile) throws IOException, InterruptedException, UnirestException {
         return downloadScreenshots(ytid, destDir, extractSources(textFile));
     }
 
-    public HashMap<String, String> downloadScreenshots(String ytid, String destDir, List<Pair<String, SubimageSize>> sources) throws IOException, InterruptedException {
+    public HashMap<String, String> downloadScreenshots(String ytid, String destDir, List<Pair<String, SubimageSize>> sources) throws IOException, InterruptedException, UnirestException {
         HashMap<String, String> result = new HashMap<>();
         if (cacheExists()) {
             result = loadCache();
@@ -142,7 +294,8 @@ public class UserResource {
 
             if (!result.containsKey(key)) {
                 String destFile = destDir + File.separator + key + ".jpg";
-                downloadScreenshot(ytid, time, source.getRight(), destFile, !firstTime);
+                String backupDestFile = destDir + File.separator + "backups" + File.separator + key + ".jpg";
+                downloadScreenshot(ytid, time, source.getRight(), destFile, backupDestFile, !firstTime);
                 String imgurFile = uploadFile(destFile);
                 result.put(key, imgurFile);
                 saveCache(result);
@@ -177,29 +330,41 @@ public class UserResource {
         writer.writeValue(cacheFile, items);
     }
 
-    public String uploadFile(String filename) {
+    public String uploadFile(String filename) throws UnirestException {
         String result = "";
 
         String endpoint = "https://api.imgur.com/3/image";
         String accessToken = "Bearer "+System.getProperty("IMGUR_ACCESS_TOKEN");
 
-        HttpResponse<JsonNode> cachedResponse;
-        try {
-            HttpResponse<JsonNode> uploadResponse = Unirest.post(endpoint)
-                    .header("Authorization", accessToken)
-                    .field("image", new File(filename))
-                    .asJson();
-            cachedResponse = uploadResponse;
-            System.out.println(cachedResponse);
+        HttpResponse<JsonNode> uploadResponse = Unirest.post(endpoint)
+                .header("Authorization", accessToken)
+                .field("image", new File(filename))
+                .asJson();
+        System.out.println(uploadResponse);
+
+        if (uploadResponse.getStatus() / 100 != 2) {
+            // redirects, server errors, lions and tigers and bears! Oh my!
+            System.out.println("Server said: " + uploadResponse.getStatusText());
+            try {
+                String message = uploadResponse.getBody().getObject()
+                        .getJSONObject("data")
+                        .getJSONObject("error")
+                        .getString("message");
+                System.out.println("Server explained: "+ message);
+                if (message.contains("You are uploading too fast. Please wait")) {
+                    System.out.println("ОПЯТЬ ЭТОТ МЕРЗКИЙ ТАЙМАУТ! НАДО УЖЕ СЛЕЗАТЬ С ИМГУРА!");
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        } else {
             result = uploadResponse.getBody().getObject().getJSONObject("data").getString("link");
-        } catch (Exception e) {
-            e.printStackTrace();
         }
 
         return result;
     }
 
-    public String downloadScreenshot(String ytid, String time, SubimageSize size, String destFile, boolean followUp) throws InterruptedException, IOException {
+    public String downloadScreenshot(String ytid, String time, SubimageSize size, String destFile, String backupDestFile, boolean followUp) throws InterruptedException, IOException {
         String ytUrl = String.format("https://www.youtube.com/watch?v=%s", ytid);
         if (!followUp) {
             web.debugShowBrowser(ytUrl);
@@ -222,16 +387,18 @@ public class UserResource {
         wait.until(driver -> ((JavascriptExecutor)driver).executeScript("return window.lastResult != undefined;").equals(true));
 
         Object result = driver().executeScript("return window.lastResult;");
-        saveImageFromBase64String((String)result, size, destFile);
+        saveImageFromBase64String((String)result, size, destFile, backupDestFile);
 
         System.out.println(result);
         return "";
     }
 
-    public void saveImageFromBase64String(String image, SubimageSize size, String destination) throws IOException {
-        byte[] data = Base64.decodeBase64((String)image);
+    public void saveImageFromBase64String(String image, SubimageSize size, String destination, String backupDestination) throws IOException {
+        byte[] data = Base64.decodeBase64(image);
         ByteArrayInputStream bis = new ByteArrayInputStream(data);
         BufferedImage bImage2 = ImageIO.read(bis);
+
+        ImageIO.write(bImage2, "jpg", new File(backupDestination) );
 
         if (size.x + size.width > bImage2.getWidth()) {
             size.width = bImage2.getWidth() - size.x -2;

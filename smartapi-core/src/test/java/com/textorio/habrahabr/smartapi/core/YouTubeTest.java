@@ -30,13 +30,16 @@ public class YouTubeTest {
 
             user = UserResource.create(Optional.of(ws), us.getUsername(), us.getEmail(), us.getPassword()).raiseIfInvalid("user is required").get();
 
-            HashMap<String, String> result = user.downloadScreenshots(
+            String result = user.processText(
                     "wiCKL2SrDM0",
                     "/Users/olegchir/tmp/img",
-                    "transcript.txt");
-            for (Map.Entry<String, String> item: result.entrySet()) {
-                System.out.println(String.format("%s = %s", item.getKey(), item.getValue()));
-            }
+                    "transcript.txt",
+                    "/Users/olegchir/tmp/img/result.html");
+            System.out.println(result);
+
+//            for (Map.Entry<String, String> item: result.entrySet()) {
+//                System.out.println(String.format("%s = %s", item.getKey(), item.getValue()));
+//            }
 
         } catch (Exception e) {
           e.printStackTrace();
