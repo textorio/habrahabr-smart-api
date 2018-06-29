@@ -16,6 +16,7 @@ import com.textorio.habrahabr.smartapi.core.lang.Thing;
 import com.textorio.habrahabr.smartapi.core.webdriver.Web;
 import com.textorio.habrahabr.smartapi.core.webdriver.WebSettings;
 import org.apache.commons.codec.binary.Base64;
+import org.junit.jupiter.api.Test;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -35,6 +36,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.textorio.habrahabr.smartapi.core.webdriver.Web.CONDITION_REACTION_TIMEOUT_SECONDS;
@@ -50,6 +53,67 @@ public class UserResource {
     private String username;
     public Web web;
 
+    public int[] extractTimeStamps (String textFile) throws UnirestException {
+        List<String> inputs = getResourceFileAsList(textFile);
+        List<String> founds = new ArrayList<>();
+
+        Pattern HHMMSS = Pattern.compile("\\d+:\\d+:\\d+");
+        Pattern MMSS = Pattern.compile("\\d+:\\d+");
+        //Pattern SS = Pattern.compile("\\d+");//Секунды обязательно в квадратных скобках!
+        List<Pattern> patterns = Arrays.asList(HHMMSS,MMSS);
+        Matcher matcher;
+
+        for (String input: inputs) {
+            for (Pattern pattern: patterns) {
+                matcher = pattern.matcher(input);
+                while (matcher.find()) {
+                    String group = matcher.group(0);
+                    founds.add(group);
+                }
+            }
+        }
+
+        List<Integer> works = new ArrayList<>();
+        for (String found: founds) {
+            String[] components = found.split(":");
+            String time = null;
+            if (components.length == 3) {
+                int hourSecs = 3600 * Integer.parseInt(components[0]);
+                int minSecs = 60 * Integer.parseInt(components[1]);
+                int secs = Integer.parseInt(components[2]);
+                int sumSecs = hourSecs + minSecs + secs;
+                time = Integer.toString(sumSecs);
+            } else if (components.length == 2) {
+                int minSecs = 60 * Integer.parseInt(components[0]);
+                int secs = Integer.parseInt(components[1]);
+                int sumSecs = minSecs + secs;
+                time = Integer.toString(sumSecs);
+            } else {
+                System.out.println("unsupported time format: "+time);
+            }
+            works.add(Integer.parseInt(time));
+        }
+
+        return convertIntegers(works);
+    }
+
+    public static int[] convertIntegers(List<Integer> integers)
+    {
+        int[] ret = new int[integers.size()];
+        Iterator<Integer> iterator = integers.iterator();
+        for (int i = 0; i < ret.length; i++)
+        {
+            ret[i] = iterator.next().intValue();
+        }
+        return ret;
+    }
+
+
+    public HashMap<String, String> downloadScreenshots(String ytid, SubimageSize size, String destDir, String textFile) throws IOException, InterruptedException, UnirestException {
+        int[] times = extractTimeStamps(textFile);
+        return downloadScreenshots(ytid, size, destDir, times);
+    }
+
     public HashMap<String, String> downloadScreenshots(String ytid, SubimageSize size, String destDir, int[] times) throws IOException, InterruptedException {
         HashMap<String, String> result = new HashMap<>();
         if (cacheExists()) {
@@ -61,7 +125,7 @@ public class UserResource {
             String key = Integer.toString(time);
 
             if (!result.containsKey(key)) {
-                String destFile = destDir + File.separator + Integer.toString(i) + ".jpg";
+                String destFile = destDir + File.separator + key + ".jpg";
                 downloadScreenshot(ytid, time, size, destFile, !firstTime);
                 String imgurFile = uploadFile(destFile);
                 result.put(key, imgurFile);
@@ -149,13 +213,29 @@ public class UserResource {
     }
 
     public String getResourceFileAsString(String fileName) {
-        InputStream is = getClass().getClassLoader().getResourceAsStream(fileName);
-        if (is != null) {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-            return reader.lines().collect(Collectors.joining(System.lineSeparator()));
+        try(InputStream is = getClass().getClassLoader().getResourceAsStream(fileName)) {
+            if (is != null) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+                return reader.lines().collect(Collectors.joining(System.lineSeparator()));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         return null;
     }
+
+    public List<String> getResourceFileAsList(String fileName) {
+        try(InputStream is = getClass().getClassLoader().getResourceAsStream(fileName)) {
+            if (is != null) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+                return reader.lines().collect(Collectors.toList());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 
     public void analyzeLog() {
         LogEntries logEntries = web.driver().manage().logs().get(LogType.BROWSER);
